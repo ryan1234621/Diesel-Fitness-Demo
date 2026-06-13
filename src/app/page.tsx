@@ -1,26 +1,31 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Dumbbell, Calendar, Users, Activity } from "lucide-react";
+import { ArrowRight, Dumbbell, Calendar, Users, Activity, User, LogOut, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+
+import { Header } from "@/components/layout/Header";
 
 export default function Home() {
+  const { user, signOut, loading, role } = useAuth();
+  const router = useRouter();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    setDropdownOpen(false);
+  };
+
+  const getDashboardLink = () => {
+    return role === "admin" ? "/admin/dashboard" : "/dashboard";
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {/* Navigation */}
-      <nav className="w-full max-w-6xl mx-auto px-6 py-6 flex justify-between items-center relative z-10">
-        <div className="flex items-center gap-2">
-          <Dumbbell className="w-8 h-8 text-[var(--primary)]" />
-          <span className="text-2xl font-black tracking-tighter uppercase">Diesel Fitness</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/login" className="px-5 py-2 font-medium text-sm hover:opacity-70 transition-opacity">
-            Log In
-          </Link>
-          <Link href="/signup" className="px-5 py-2 bg-[var(--primary)] text-[var(--primary-foreground)] font-medium text-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-md">
-            Get Started
-          </Link>
-        </div>
-      </nav>
+      <Header />
 
       {/* Hero Section */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 text-center pt-20 pb-32">
@@ -32,15 +37,22 @@ export default function Home() {
             Exclusive personal training, streamlined booking, and uncompromising results. Welcome to the elite tier of fitness.
           </p>
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/signup" className="group flex items-center gap-2 px-8 py-4 bg-[var(--primary)] text-[var(--primary-foreground)] text-lg font-bold rounded-full hover:shadow-xl hover:-translate-y-1 transition-all">
-              Book Your Session
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
+            {user ? (
+              <Link href={getDashboardLink()} className="group flex items-center gap-2 px-8 py-4 bg-[var(--primary)] text-[var(--primary-foreground)] text-lg font-bold rounded-full hover:shadow-xl hover:-translate-y-1 transition-all">
+                Go to Dashboard
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            ) : (
+              <Link href="/signup" className="group flex items-center gap-2 px-8 py-4 bg-[var(--primary)] text-[var(--primary-foreground)] text-lg font-bold rounded-full hover:shadow-xl hover:-translate-y-1 transition-all">
+                Book Your Session
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            )}
           </div>
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl mx-auto mt-32 text-left">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl mx-auto mt-32 text-left relative z-10">
           <div className="p-8 rounded-3xl bg-white shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
             <div className="w-12 h-12 bg-[#F4F3EF] rounded-full flex items-center justify-center mb-6">
               <Calendar className="w-6 h-6 text-black" />

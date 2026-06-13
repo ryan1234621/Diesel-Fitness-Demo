@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Sidebar } from "@/components/Sidebar";
 import { Loader2 } from "lucide-react";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, role, loading } = useAuth();
   const router = useRouter();
 
@@ -14,13 +14,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!loading) {
       if (!user) {
         router.push("/login");
-      } else if (role !== "admin") {
-        router.push("/unauthorized");
+      } else if (role === "admin") {
+        router.push("/admin/dashboard");
+      } else if (role === "banned") {
+        router.push("/banned");
       }
     }
   }, [user, role, loading, router]);
 
-  if (loading || role !== "admin") {
+  if (loading || role === "banned" || !user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--background)]">
         <Loader2 className="w-8 h-8 animate-spin mb-4" />
@@ -31,7 +33,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex h-screen bg-[var(--background)]">
-      <Sidebar role="admin" />
+      <Sidebar role="client" />
       <main className="flex-1 overflow-y-auto p-8">{children}</main>
     </div>
   );
