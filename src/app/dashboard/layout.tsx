@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Sidebar } from "@/components/Sidebar";
 import { Loader2 } from "lucide-react";
 
-export default function ClientLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, role, loading } = useAuth();
   const router = useRouter();
 

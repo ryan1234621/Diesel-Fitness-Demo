@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  role: 'admin' | 'client' | 'banned' | null;
+  role: 'admin' | 'client' | 'user' | 'banned' | null;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -23,7 +23,7 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [role, setRole] = useState<'admin' | 'client' | 'banned' | null>(null);
+  const [role, setRole] = useState<'admin' | 'client' | 'user' | 'banned' | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           .single();
           
         if (error) throw error;
-        if (mounted) setRole(data.role as 'admin' | 'client' | 'banned');
+        if (mounted) setRole(data.role as 'admin' | 'client' | 'user' | 'banned');
       } catch (error) {
         console.error('Error fetching role:', error);
         if (mounted) setRole('client'); // Default fallback

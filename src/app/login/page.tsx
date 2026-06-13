@@ -42,7 +42,7 @@ export default function LoginPage() {
       } else if (profileData.role === "banned") {
         router.push("/banned");
       } else {
-        router.push("/client/dashboard");
+        router.push("/dashboard");
       }
     } catch (err: any) {
       error(err.message || "Failed to log in");

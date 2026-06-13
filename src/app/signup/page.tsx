@@ -25,24 +25,18 @@ export default function SignupPage() {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            full_name: `${firstName} ${lastName}`.trim(),
+          }
+        }
       });
 
       if (signUpError) throw signUpError;
       if (!data.user) throw new Error("No user returned");
 
-      // 2. Create profile (Auth trigger should handle it, but we update the name)
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          first_name: firstName,
-          last_name: lastName,
-        })
-        .eq('id', data.user.id);
-
-      if (profileError) throw profileError;
-
       success("Account created successfully. Welcome to Diesel Fitness!");
-      router.push("/client/dashboard");
+      router.push("/dashboard");
     } catch (err: any) {
       error(err.message || "Failed to sign up");
     } finally {
