@@ -1,0 +1,46 @@
+## ## 5. Implementation Phases
+
+### Phase 1: Authentication & Profiles
+- [x] Connect Supabase Client.
+- [x] Implement Auth flow (Sign up, Sign in, Sign out).
+- [x] Logic: New signups get `user` role.
+- [x] Profile setup: Address and phone number fields (implemented Full Name & comprehensive database fields).
+- [x] Profile setup: Avatar image cropping and upload to secure Supabase storage buckets.
+- [x] Dashboard shell (Sidebar + Sidebar Trigger).
+- [x] Global Navigation Header with dynamic profile dropdown.
+- [x] Protected route middleware and Admin access controls.
+
+### Phase 2: Session & Category Management
+- [ ] CRUD for `categories`.
+- [ ] CRUD for `session_types`.
+- [ ] CRUD for `sessions`.
+- [ ] Implement Availability Rules using JSONB recurrence rules.
+- [ ] Admin UI for Session management (List, Create, Edit).
+
+### Phase 3: Booking Logic & Evolution
+- [ ] Implement Booking flow for clients.
+- [ ] Logic: First booking promotion (`user` -> `client`).
+- [ ] Constraint: Check `app_settings.max_booking_days_advance` before allowing a booking.
+- [ ] Admin Dashboard: Overview widgets (Total Bookings, Active Clients).
+
+### Phase 4: History & Logging
+- [ ] Auth Hook: Save entry in `login_history` on successful login.
+- [ ] Database Triggers (or service logic) for `session_history`.
+- [ ] Master Booking history view for Admin.
+
+### Phase 5: Admin Controls & Reporting
+- [ ] User Management: Deletion (Account removal) and Role management.
+- [ ] Reporting: Charts for session popularity (using Recharts).
+- [ ] Settings Page: Manage `app_settings` (inc. booking window).
+
+### Phase 6: Polish & Testing
+- [ ] Top-right toast notifications for all feedback.
+- [ ] Skeleton loading states for dashboards.
+- [ ] Mobile optimization for dashboards.
+
+---
+
+## ## 6. Functional Specs
+
+### Role Promotion Logic
+A Supabase Database Function triggered on `bookings` insert:
