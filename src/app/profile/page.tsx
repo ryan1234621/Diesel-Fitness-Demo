@@ -2,17 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { User, Mail, Shield, ArrowLeft, Loader2 } from "lucide-react";
+import { User, Mail, Shield, ArrowLeft, Loader2, Upload, Camera } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/contexts/ToastContext";
 
 export default function ProfilePage() {
-  const { user, role, loading } = useAuth();
+  const { user, role, loading, avatarSignedUrl, refreshAvatar } = useAuth();
   const router = useRouter();
   const { error, success } = useToast();
   
   const [isEditing, setIsEditing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [profileData, setProfileData] = useState({
     firstName: "",
     lastName: "",
@@ -67,6 +68,83 @@ export default function ProfilePage() {
     setIsSaving(false);
   };
 
+  const getCroppedImg = (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const size = Math.min(img.width, img.height);
+          // Set standard avatar size
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject(new Error('No 2d context'));
+          
+          // Center crop
+          const startX = (img.width - size) / 2;
+          const startY = (img.height - size) / 2;
+          
+          ctx.drawImage(img, startX, startY, size, size, 0, 0, size, size);
+          canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error('Canvas toBlob failed'));
+          }, 'image/jpeg', 0.9);
+        };
+        img.onerror = () => reject(new Error('Image load failed'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('File read failed'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user || !event.target.files || event.target.files.length === 0) return;
+    
+    const file = event.target.files[0];
+    if (file.size > 5 * 1024 * 1024) {
+      error("Image size must be less than 5MB");
+      return;
+    }
+    
+    setIsUploading(true);
+    
+    // File path: {user_id}/{timestamp}_{filename} to avoid cache issues
+    // Always save as jpeg since we crop and convert it
+    const fileExt = 'jpeg';
+    const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+    
+    try {
+      // Auto center-crop image to 1:1 ratio
+      const croppedBlob = await getCroppedImg(file);
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, croppedBlob, { contentType: 'image/jpeg' });
+        
+      if (uploadError) throw uploadError;
+      
+      // Update profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: filePath })
+        .eq('id', user.id);
+        
+      if (updateError) throw updateError;
+      
+      await refreshAvatar();
+      success("Profile picture updated successfully!");
+    } catch (err: any) {
+      console.error(err);
+      error("Failed to upload profile picture");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
@@ -105,11 +183,30 @@ export default function ProfilePage() {
         </div>
 
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 space-y-8">
-          <div className="flex items-center gap-6 pb-8 border-b border-gray-100">
-            <div className="w-24 h-24 bg-[#F4F3EF] rounded-full flex items-center justify-center shrink-0">
-              <User className="w-10 h-10 text-black" />
+          <div className="flex flex-col md:flex-row items-center gap-6 pb-8 border-b border-gray-100">
+            <div className="relative group">
+              <div className="w-24 h-24 bg-[#F4F3EF] rounded-full flex items-center justify-center shrink-0 overflow-hidden border-2 border-gray-100 shadow-sm">
+                {isUploading ? (
+                  <Loader2 className="w-8 h-8 animate-spin text-black" />
+                ) : avatarSignedUrl ? (
+                  <img src={avatarSignedUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-10 h-10 text-black" />
+                )}
+              </div>
+              <label className="absolute inset-0 flex items-center justify-center bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity backdrop-blur-sm">
+                <Camera className="w-6 h-6" />
+                <input 
+                  type="file" 
+                  accept="image/jpeg,image/png,image/webp" 
+                  className="hidden" 
+                  onChange={handleFileUpload}
+                  disabled={isUploading}
+                />
+              </label>
             </div>
-            <div>
+            
+            <div className="text-center md:text-left">
               <h2 className="text-2xl font-black">{profileData.fullName}</h2>
               <p className="text-[var(--text-secondary)] flex items-center gap-2 mt-1">
                 <Mail className="w-4 h-4" /> {user.email}

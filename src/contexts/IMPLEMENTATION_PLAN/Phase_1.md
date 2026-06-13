@@ -59,3 +59,20 @@
 * **Status**: ✅ Completed
 * **Assigned Issue**: #4
 * **Branch**: `feat/4-auth-profiles`
+
+---
+
+## 6. Additional Profile & Dropdown Enhancements
+**Start Datetime**: `2026-06-13T07:38:00Z`
+*(Tracked per GITHUB_ISSUES_GUIDE.md)*
+
+### Objectives
+- Create the profiles for users of any role type.
+- Add a profile button (with picture or placeholder) instead of a dashboard button on the root page.
+- Ensure the profile button opens a dropdown menu with "Profile" and "Log Out".
+
+### Checklist
+- [ ] Create the role-agnostic profile page.
+- [ ] Add the profile button to the root page.
+- [ ] Implement the dropdown menu with links to "Profile" and "Log Out".
+- [ ] Verify "Log Out" remains functional.

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Dumbbell, User, LogOut, Loader2, LayoutDashboard, Menu, X } from "lucide-react";
+import { Dumbbell, User, LogOut, Loader2, LayoutDashboard, Menu, X, Shield } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function Header() {
@@ -17,7 +17,7 @@ export function Header() {
   };
 
   const getDashboardLink = () => {
-    return role === "admin" ? "/admin/dashboard" : "/dashboard";
+    return role === "admin" ? "/admin" : "/dashboard";
   };
 
   const getInitials = () => {
@@ -32,6 +32,8 @@ export function Header() {
     }
     return name.substring(0, 2).toUpperCase();
   };
+
+  const { avatarSignedUrl } = useAuth();
 
   return (
     <nav className="w-full max-w-6xl mx-auto px-6 py-6 flex justify-between items-center relative z-20">
@@ -49,8 +51,12 @@ export function Header() {
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-gray-100 transition-colors focus:outline-none"
               >
-                <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold shadow-sm overflow-hidden text-sm">
-                  {getInitials()}
+                <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold shadow-sm overflow-hidden text-sm border-2 border-white">
+                  {avatarSignedUrl ? (
+                    <img src={avatarSignedUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    getInitials()
+                  )}
                 </div>
               </button>
 
@@ -73,14 +79,26 @@ export function Header() {
                       <User className="w-4 h-4" />
                       Profile
                     </Link>
-                    <Link 
-                      href={getDashboardLink()}
-                      onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors"
-                    >
-                      <LayoutDashboard className="w-4 h-4" />
-                      Dashboard
-                    </Link>
+                    {(role === "user" || role === "client") && (
+                      <Link 
+                        href="/dashboard"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors"
+                      >
+                        <LayoutDashboard className="w-4 h-4" />
+                        Dashboard
+                      </Link>
+                    )}
+                    {role === "admin" && (
+                      <Link 
+                        href="/admin"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors"
+                      >
+                        <Shield className="w-4 h-4" />
+                        Admin
+                      </Link>
+                    )}
                     <button 
                       onClick={handleSignOut}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-red-600 rounded-xl hover:bg-red-50 transition-colors"
@@ -125,8 +143,12 @@ export function Header() {
             {user ? (
               <>
                 <div className="p-3 bg-gray-50 rounded-xl flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold text-sm shrink-0">
-                    {getInitials()}
+                  <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden border border-gray-200">
+                    {avatarSignedUrl ? (
+                      <img src={avatarSignedUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      getInitials()
+                    )}
                   </div>
                   <div className="flex flex-col overflow-hidden">
                     <span className="text-sm font-bold text-black truncate">
@@ -146,14 +168,26 @@ export function Header() {
                   <User className="w-5 h-5" />
                   Profile
                 </Link>
-                <Link 
-                  href={getDashboardLink()}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors"
-                >
-                  <LayoutDashboard className="w-5 h-5" />
-                  Dashboard
-                </Link>
+                {(role === "user" || role === "client") && (
+                  <Link 
+                    href="/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    <LayoutDashboard className="w-5 h-5" />
+                    Dashboard
+                  </Link>
+                )}
+                {role === "admin" && (
+                  <Link 
+                    href="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    <Shield className="w-5 h-5" />
+                    Admin
+                  </Link>
+                )}
                 <button 
                   onClick={handleSignOut}
                   className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-600 rounded-xl hover:bg-red-50 transition-colors"
