@@ -4,9 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { Dumbbell, User, LogOut, Loader2, LayoutDashboard, Menu, X, Shield } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { UserNav } from "@/components/UserNav";
 
 export function Header() {
-  const { user, signOut, loading, role } = useAuth();
+  const { user, signOut, loading, profile } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -17,7 +18,7 @@ export function Header() {
   };
 
   const getDashboardLink = () => {
-    return role === "admin" ? "/admin" : "/dashboard";
+    return profile?.role === "admin" ? "/admin" : "/dashboard";
   };
 
   const getInitials = () => {
@@ -46,70 +47,7 @@ export function Header() {
           {loading ? (
             <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
           ) : user ? (
-            <div className="relative">
-              <button 
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-gray-100 transition-colors focus:outline-none"
-              >
-                <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold shadow-sm overflow-hidden text-sm border-2 border-white">
-                  {avatarSignedUrl ? (
-                    <img src={avatarSignedUrl} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    getInitials()
-                  )}
-                </div>
-              </button>
-
-              {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="p-2 border-b border-gray-50 flex flex-col">
-                    <span className="text-sm font-bold text-black px-2 truncate">
-                      {user.user_metadata?.full_name || "User"}
-                    </span>
-                    <span className="text-xs text-[var(--text-secondary)] font-medium px-2 py-1 truncate">
-                      {user.email}
-                    </span>
-                  </div>
-                  <div className="p-2 space-y-1">
-                    <Link 
-                      href="/profile"
-                      onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors"
-                    >
-                      <User className="w-4 h-4" />
-                      Profile
-                    </Link>
-                    {(role === "user" || role === "client") && (
-                      <Link 
-                        href="/dashboard"
-                        onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors"
-                      >
-                        <LayoutDashboard className="w-4 h-4" />
-                        Dashboard
-                      </Link>
-                    )}
-                    {role === "admin" && (
-                      <Link 
-                        href="/admin"
-                        onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors"
-                      >
-                        <Shield className="w-4 h-4" />
-                        Admin
-                      </Link>
-                    )}
-                    <button 
-                      onClick={handleSignOut}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-red-600 rounded-xl hover:bg-red-50 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Log Out
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <UserNav />
           ) : (
           <>
             <Link href="/login" className="px-5 py-2 font-medium text-sm hover:opacity-70 transition-opacity">
@@ -168,7 +106,7 @@ export function Header() {
                   <User className="w-5 h-5" />
                   Profile
                 </Link>
-                {(role === "user" || role === "client") && (
+                {(profile?.role === "user" || profile?.role === "client") && (
                   <Link 
                     href="/dashboard"
                     onClick={() => setMobileMenuOpen(false)}
@@ -178,7 +116,7 @@ export function Header() {
                     Dashboard
                   </Link>
                 )}
-                {role === "admin" && (
+                {profile?.role === "admin" && (
                   <Link 
                     href="/admin"
                     onClick={() => setMobileMenuOpen(false)}

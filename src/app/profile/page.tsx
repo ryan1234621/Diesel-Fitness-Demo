@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/contexts/ToastContext";
 
 export default function ProfilePage() {
-  const { user, role, loading, avatarSignedUrl, refreshAvatar } = useAuth();
+  const { user, profile, loading, avatarSignedUrl, refreshAvatar } = useAuth();
   const router = useRouter();
   const { error, success } = useToast();
   
@@ -163,7 +163,7 @@ export default function ProfilePage() {
     );
   }
 
-  const goBackUrl = role === "admin" ? "/admin/dashboard" : "/dashboard";
+  const goBackUrl = profile?.role === "admin" ? "/admin/dashboard" : "/dashboard";
 
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col items-center py-12 px-6">
@@ -222,7 +222,7 @@ export default function ProfilePage() {
                 <Mail className="w-4 h-4" /> {user.email}
               </p>
               <span className="inline-flex items-center gap-1 mt-3 px-3 py-1 bg-gray-100 text-black text-xs font-bold uppercase tracking-wide rounded-full">
-                <Shield className="w-3 h-3" /> {role}
+                <Shield className="w-3 h-3" /> {profile?.role}
               </span>
             </div>
           </div>

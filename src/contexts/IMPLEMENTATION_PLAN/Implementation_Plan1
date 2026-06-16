@@ -10,12 +10,17 @@
 - [x] Global Navigation Header with dynamic profile dropdown.
 - [x] Protected route middleware and Admin access controls.
 
-### Phase 2: Session & Category Management
+### Phase 2: Admin UI, Session & Category Management
 - [ ] CRUD for `categories`.
 - [ ] CRUD for `session_types`.
 - [ ] CRUD for `sessions`.
 - [ ] Implement Availability Rules using JSONB recurrence rules.
 - [ ] Admin UI for Session management (List, Create, Edit).
+- [ ] Layout UI: Collapsible Sidebar.
+- [ ] Layout UI: Small text breadcrumbs navigation in TopBar.
+- [ ] Dashboard UI: Trend Indicators on metric cards with date range filter.
+- [ ] Dashboard UI: Contextual Quick Actions.
+- [ ] Dashboard UI: Real-time Notification Center (Supabase Realtime).
 
 ### Phase 3: Booking Logic & Evolution
 - [ ] Implement Booking flow for clients.
