@@ -1,7 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Filter, MoreVertical, Loader2, CheckCircle, XCircle, Calendar as CalendarIcon, User as UserIcon, Eye, MapPin, Clock, CreditCard } from "lucide-react";
+import { 
+  Search, 
+  Filter, 
+  MoreVertical, 
+  Loader2, 
+  CheckCircle, 
+  XCircle, 
+  Calendar as CalendarIcon, 
+  User as UserIcon, 
+  MapPin, 
+  Clock, 
+  CreditCard,
+  CalendarDays,
+  CalendarRange,
+  SlidersHorizontal,
+  Tags,
+  Eye,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown
+} from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type Booking = {
@@ -28,11 +48,57 @@ type Booking = {
 export default function BookingsManagement() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Filter States
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sessionTypeFilter, setSessionTypeFilter] = useState<string>("all");
+  const [dateFilterType, setDateFilterType] = useState<"all" | "today" | "week" | "month" | "custom">("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
   const [inspectingBooking, setInspectingBooking] = useState<Booking | null>(null);
+
+  // Sorting States
+  const [sortField, setSortField] = useState<"client" | "session" | "date" | "price" | "payment" | "status">("date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+  const handleSort = (field: typeof sortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const renderSortHeader = (field: typeof sortField, label: string, align: "left" | "right" = "left") => {
+    const isActive = sortField === field;
+    return (
+      <th 
+        onClick={() => handleSort(field)}
+        className={`py-4 px-6 font-bold text-[var(--text-secondary)] uppercase text-xs tracking-wider cursor-pointer hover:text-black select-none transition-colors ${
+          align === "right" ? "text-right" : "text-left"
+        }`}
+      >
+        <div className={`flex items-center gap-1.5 ${align === "right" ? "justify-end" : "justify-start"}`}>
+          <span>{label}</span>
+          <span className="text-gray-400 shrink-0">
+            {isActive ? (
+              sortDirection === "asc" ? (
+                <ArrowUp className="w-3.5 h-3.5 text-black" />
+              ) : (
+                <ArrowDown className="w-3.5 h-3.5 text-black" />
+              )
+            ) : (
+              <ArrowUpDown className="w-3.5 h-3.5 opacity-40 hover:text-black transition-opacity" />
+            )}
+          </span>
+        </div>
+      </th>
+    );
+  };
 
   const fetchBookings = async () => {
     try {
@@ -67,12 +133,32 @@ export default function BookingsManagement() {
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
+      // Fetch old booking for audit trail
+      const { data: oldBooking } = await supabase
+        .from("bookings")
+        .select("*")
+        .eq("id", id)
+        .single();
+
       const { error } = await supabase
         .from("bookings")
         .update({ status: newStatus })
         .eq("id", id);
       
       if (error) throw error;
+
+      // Log action to bookings_history
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("bookings_history").insert({
+          booking_id: id,
+          action: `status_updated_to_${newStatus}`,
+          changed_by: user.id,
+          previous_data: oldBooking,
+          new_data: { ...oldBooking, status: newStatus }
+        });
+      }
+
       setBookings(bookings.map(b => b.id === id ? { ...b, status: newStatus } : b));
     } catch (err: any) {
       console.error("Error updating booking:", err);
@@ -82,6 +168,11 @@ export default function BookingsManagement() {
     }
   };
 
+  // Get unique session type titles from bookings
+  const sessionTypes = Array.from(
+    new Set(bookings.map(b => b.sessions?.session_types?.title).filter(Boolean))
+  );
+
   const filteredBookings = bookings.filter(booking => {
     const matchesSearch = 
       (booking.profiles?.full_name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
@@ -89,8 +180,82 @@ export default function BookingsManagement() {
       (booking.sessions?.session_types?.title.toLowerCase() || "").includes(searchQuery.toLowerCase());
     
     const matchesStatus = statusFilter === "all" || booking.status === statusFilter;
+    const matchesSessionType = sessionTypeFilter === "all" || booking.sessions?.session_types?.title === sessionTypeFilter;
 
-    return matchesSearch && matchesStatus;
+    // Date Filtering
+    let matchesDate = true;
+    if (booking.sessions?.start_time) {
+      const sessionDate = new Date(booking.sessions.start_time);
+      const now = new Date();
+      
+      if (dateFilterType === "today") {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        matchesDate = sessionDate >= today && sessionDate < tomorrow;
+      } else if (dateFilterType === "week") {
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday start
+        startOfWeek.setHours(0, 0, 0, 0);
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 7);
+        matchesDate = sessionDate >= startOfWeek && sessionDate < endOfWeek;
+      } else if (dateFilterType === "month") {
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        matchesDate = sessionDate >= startOfMonth && sessionDate < endOfMonth;
+      } else if (dateFilterType === "custom") {
+        const start = startDate ? new Date(`${startDate}T00:00:00`) : null;
+        const end = endDate ? new Date(`${endDate}T23:59:59`) : null;
+        
+        if (start && end) {
+          matchesDate = sessionDate >= start && sessionDate <= end;
+        } else if (start) {
+          matchesDate = sessionDate >= start;
+        } else if (end) {
+          matchesDate = sessionDate <= end;
+        }
+      }
+    }
+
+    return matchesSearch && matchesStatus && matchesSessionType && matchesDate;
+  });
+
+  const sortedBookings = [...filteredBookings].sort((a, b) => {
+    let aVal: any = "";
+    let bVal: any = "";
+
+    switch (sortField) {
+      case "client":
+        aVal = a.profiles?.full_name || a.profiles?.email || "";
+        bVal = b.profiles?.full_name || b.profiles?.email || "";
+        break;
+      case "session":
+        aVal = a.sessions?.session_types?.title || "";
+        bVal = b.sessions?.session_types?.title || "";
+        break;
+      case "date":
+        aVal = a.sessions?.start_time ? new Date(a.sessions.start_time).getTime() : 0;
+        bVal = b.sessions?.start_time ? new Date(b.sessions.start_time).getTime() : 0;
+        break;
+      case "price":
+        aVal = a.sessions?.price || 0;
+        bVal = b.sessions?.price || 0;
+        break;
+      case "payment":
+        aVal = a.payment_status || "";
+        bVal = b.payment_status || "";
+        break;
+      case "status":
+        aVal = a.status || "";
+        bVal = b.status || "";
+        break;
+    }
+
+    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+    return 0;
   });
 
   return (
@@ -108,30 +273,129 @@ export default function BookingsManagement() {
         {/* Decorative background blob */}
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-gradient-to-br from-gray-100 to-transparent blur-3xl opacity-50 pointer-events-none"></div>
 
-        {/* Search & Filter Bar */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6 relative z-10">
-          <div className="relative flex-1">
-            <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input 
-              type="text" 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by client name or session..." 
-              className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200/60 bg-white/50 backdrop-blur-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/10 transition-all shadow-sm"
-            />
+        {/* Filters Panel */}
+        <div className="space-y-4 mb-6 relative z-10">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search Bar */}
+            <div className="relative flex-1">
+              <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input 
+                type="text" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by client name or session..." 
+                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200/60 bg-white/50 backdrop-blur-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/10 transition-all shadow-sm font-medium"
+              />
+            </div>
+            
+            {/* Status Filter */}
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="flex items-center justify-center gap-2 pl-6 pr-10 py-3 border border-gray-200/60 rounded-xl font-bold hover:bg-gray-50/50 transition-colors appearance-none bg-white/50 backdrop-blur-sm min-w-[150px] shadow-sm"
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              <Filter className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+            </div>
+
+            {/* Session Type Filter */}
+            <div className="relative">
+              <select
+                value={sessionTypeFilter}
+                onChange={(e) => setSessionTypeFilter(e.target.value)}
+                className="flex items-center justify-center gap-2 pl-6 pr-10 py-3 border border-gray-200/60 rounded-xl font-bold hover:bg-gray-50/50 transition-colors appearance-none bg-white/50 backdrop-blur-sm min-w-[180px] shadow-sm"
+              >
+                <option value="all">All Sessions</option>
+                {sessionTypes.map(title => (
+                  <option key={title} value={title}>{title}</option>
+                ))}
+              </select>
+              <Tags className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+            </div>
           </div>
-          <div className="relative">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-200/60 rounded-xl font-bold hover:bg-gray-50/50 transition-colors appearance-none bg-white/50 backdrop-blur-sm min-w-[150px] shadow-sm"
+
+          {/* Date Filters Bar */}
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <span className="text-xs font-black uppercase text-[var(--text-secondary)] tracking-wider mr-2">Date:</span>
+            
+            <button
+              onClick={() => setDateFilterType("all")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                dateFilterType === "all"
+                  ? "bg-black text-white border-black"
+                  : "bg-white/50 border-gray-200/60 text-gray-600 hover:bg-gray-50"
+              }`}
             >
-              <option value="all">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-            <Filter className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              <Clock className="w-3.5 h-3.5" /> All Time
+            </button>
+
+            <button
+              onClick={() => setDateFilterType("today")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                dateFilterType === "today"
+                  ? "bg-black text-white border-black"
+                  : "bg-white/50 border-gray-200/60 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <CalendarIcon className="w-3.5 h-3.5" /> Today
+            </button>
+
+            <button
+              onClick={() => setDateFilterType("week")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                dateFilterType === "week"
+                  ? "bg-black text-white border-black"
+                  : "bg-white/50 border-gray-200/60 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <CalendarDays className="w-3.5 h-3.5" /> This Week
+            </button>
+
+            <button
+              onClick={() => setDateFilterType("month")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                dateFilterType === "month"
+                  ? "bg-black text-white border-black"
+                  : "bg-white/50 border-gray-200/60 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <CalendarRange className="w-3.5 h-3.5" /> This Month
+            </button>
+
+            <button
+              onClick={() => setDateFilterType("custom")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                dateFilterType === "custom"
+                  ? "bg-black text-white border-black"
+                  : "bg-white/50 border-gray-200/60 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" /> Custom...
+            </button>
+
+            {/* Custom Date Inputs */}
+            {dateFilterType === "custom" && (
+              <div className="flex items-center gap-2 pl-2 border-l border-gray-200 animate-in fade-in slide-in-from-left-2 duration-300">
+                <input 
+                  type="date" 
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-200 rounded-xl text-xs font-bold bg-white text-black focus:outline-none focus:ring-1 focus:ring-black"
+                />
+                <span className="text-gray-400 text-xs font-bold">to</span>
+                <input 
+                  type="date" 
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-200 rounded-xl text-xs font-bold bg-white text-black focus:outline-none focus:ring-1 focus:ring-black"
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -149,21 +413,27 @@ export default function BookingsManagement() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="py-4 px-6 font-bold text-[var(--text-secondary)] uppercase text-xs tracking-wider">Client</th>
-                  <th className="py-4 px-6 font-bold text-[var(--text-secondary)] uppercase text-xs tracking-wider">Session Info</th>
-                  <th className="py-4 px-6 font-bold text-[var(--text-secondary)] uppercase text-xs tracking-wider">Payment</th>
-                  <th className="py-4 px-6 font-bold text-[var(--text-secondary)] uppercase text-xs tracking-wider">Status</th>
+                  {renderSortHeader("client", "Client")}
+                  {renderSortHeader("session", "Session")}
+                  {renderSortHeader("date", "Date & Time")}
+                  {renderSortHeader("price", "Price")}
+                  {renderSortHeader("payment", "Payment")}
+                  {renderSortHeader("status", "Status")}
                   <th className="py-4 px-6 font-bold text-[var(--text-secondary)] uppercase text-xs tracking-wider text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50/50">
-                {filteredBookings.map((booking) => {
+                {sortedBookings.map((booking) => {
                   const sessionStart = new Date(booking.sessions?.start_time || "");
                   return (
-                    <tr key={booking.id} className="hover:bg-white/60 transition-all duration-200 group">
-                      <td className="py-4 px-6 cursor-pointer" onClick={() => setInspectingBooking(booking)}>
+                    <tr 
+                      key={booking.id} 
+                      onClick={() => setInspectingBooking(booking)}
+                      className="hover:bg-white/60 transition-all duration-200 group cursor-pointer"
+                    >
+                      <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-gray-50 to-gray-100 text-black flex items-center justify-center rounded-full shadow-sm border border-gray-200/50">
+                          <div className="w-10 h-10 bg-gradient-to-br from-gray-50 to-gray-100 text-black flex items-center justify-center rounded-full shadow-sm border border-gray-200/50 shrink-0">
                             <UserIcon className="w-5 h-5" />
                           </div>
                           <div>
@@ -172,14 +442,24 @@ export default function BookingsManagement() {
                           </div>
                         </div>
                       </td>
+                      <td className="py-4 px-6 font-bold text-black">
+                        {booking.sessions?.session_types?.title}
+                      </td>
                       <td className="py-4 px-6">
-                        <div className="font-bold text-black">{booking.sessions?.session_types?.title}</div>
-                        <div className="text-sm text-[var(--text-secondary)] flex items-center gap-2 mt-1">
-                          <CalendarIcon className="w-3 h-3" />
-                          {sessionStart.toLocaleString(undefined, { 
-                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                        <div className="text-sm text-black font-semibold flex items-center gap-2">
+                          <CalendarIcon className="w-3.5 h-3.5 text-gray-400" />
+                          {sessionStart.toLocaleDateString(undefined, { 
+                            month: 'short', day: 'numeric', year: 'numeric'
                           })}
                         </div>
+                        <div className="text-xs text-[var(--text-secondary)] mt-0.5">
+                          {sessionStart.toLocaleTimeString(undefined, { 
+                            hour: '2-digit', minute: '2-digit' 
+                          })}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 font-black text-black text-sm">
+                        £{Number(booking.sessions?.price || 0).toFixed(2)}
                       </td>
                       <td className="py-4 px-6">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${
@@ -197,10 +477,10 @@ export default function BookingsManagement() {
                           {booking.status}
                         </span>
                       </td>
-                      <td className="py-4 px-6 text-right relative">
+                      <td className="py-4 px-6 text-right relative" onClick={(e) => e.stopPropagation()}>
                         <button 
                           onClick={() => setActionMenuOpen(actionMenuOpen === booking.id ? null : booking.id)}
-                          className="p-2 text-gray-400 hover:text-black transition-colors rounded-full hover:bg-white shadow-sm opacity-50 group-hover:opacity-100"
+                          className="p-2 text-gray-400 hover:text-black transition-colors rounded-full hover:bg-white shadow-sm"
                         >
                           <MoreVertical className="w-5 h-5" />
                         </button>
@@ -310,7 +590,7 @@ export default function BookingsManagement() {
                   <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Payment</h3>
                   <div className="flex items-center gap-2 font-bold">
                     <CreditCard className="w-5 h-5 text-green-600" />
-                    ${Number(inspectingBooking.sessions?.price || 0).toFixed(2)}
+                    £{Number(inspectingBooking.sessions?.price || 0).toFixed(2)}
                   </div>
                   <span className={`inline-block mt-2 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide ${
                     inspectingBooking.payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'

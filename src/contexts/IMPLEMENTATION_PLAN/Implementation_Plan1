@@ -11,37 +11,40 @@
 - [x] Protected route middleware and Admin access controls.
 
 ### Phase 2: Admin UI, Session & Category Management
-- [ ] CRUD for `categories`.
-- [ ] CRUD for `session_types`.
-- [ ] CRUD for `sessions`.
-- [ ] Implement Availability Rules using JSONB recurrence rules.
-- [ ] Admin UI for Session management (List, Create, Edit).
-- [ ] Layout UI: Collapsible Sidebar.
-- [ ] Layout UI: Small text breadcrumbs navigation in TopBar.
-- [ ] Dashboard UI: Trend Indicators on metric cards with date range filter.
-- [ ] Dashboard UI: Contextual Quick Actions.
-- [ ] Dashboard UI: Real-time Notification Center (Supabase Realtime).
+- [x] CRUD for `categories`.
+- [x] CRUD for `session_types`.
+- [x] CRUD for `sessions`.
+- [x] Implement Availability Rules using JSONB recurrence rules.
+- [x] Admin UI for Session management (List, Create, Edit).
+- [x] Layout UI: Collapsible Sidebar.
+- [x] Layout UI: Small text breadcrumbs navigation in TopBar.
+- [x] Dashboard UI: Trend Indicators on metric cards with date range filter.
+- [x] Dashboard UI: Contextual Quick Actions.
+- [x] Dashboard UI: Real-time Notification Center (Supabase Realtime).
 
 ### Phase 3: Booking Logic & Evolution
-- [ ] Implement Booking flow for clients.
-- [ ] Logic: First booking promotion (`user` -> `client`).
-- [ ] Constraint: Check `app_settings.max_booking_days_advance` before allowing a booking.
-- [ ] Admin Dashboard: Overview widgets (Total Bookings, Active Clients).
+- [x] Implement Booking flow for clients.
+- [x] Logic: First booking promotion (`user` -> `client`).
+- [x] Constraint: Check `app_settings.max_booking_days_advance` before allowing a booking.
+- [x] Admin Dashboard: Overview widgets (Total Bookings, Active Clients).
 
 ### Phase 4: History & Logging
-- [ ] Auth Hook: Save entry in `login_history` on successful login.
-- [ ] Database Triggers (or service logic) for `session_history`.
-- [ ] Master Booking history view for Admin.
+- [x] Auth Hook: Save entry in `login_history` on successful login.
+- [x] Database Triggers (or service logic) for `session_history`.
+- [x] Master Booking history view for Admin.
 
 ### Phase 5: Admin Controls & Reporting
-- [ ] User Management: Deletion (Account removal) and Role management.
-- [ ] Reporting: Charts for session popularity (using Recharts).
-- [ ] Settings Page: Manage `app_settings` (inc. booking window).
+- [x] User Management: Deletion (Account removal) and Role management.
+- [x] Reporting: Charts for session popularity (using Recharts).
+- [x] Settings Page: Manage `app_settings` (inc. booking window).
 
 ### Phase 6: Polish & Testing
-- [ ] Top-right toast notifications for all feedback.
-- [ ] Skeleton loading states for dashboards.
-- [ ] Mobile optimization for dashboards.
+- [x] Top-right toast notifications for all feedback.
+- [x] Skeleton loading states for dashboards.
+- [x] Mobile optimization for dashboards.
+
+### Phase 7: Sessions Tab Polish
+- [x] Row clicks, persistent view (Eye) icons, details modal with client bookings list and delete/edit actions in Schedule, Types, and Categories tabs.
 
 ---
 

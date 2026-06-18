@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 
 export default function Home() {
-  const { user, signOut, loading, role } = useAuth();
+  const { user, signOut, loading, profile } = useAuth();
   const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -19,7 +19,7 @@ export default function Home() {
   };
 
   const getDashboardLink = () => {
-    return role === "admin" ? "/admin/dashboard" : "/dashboard";
+    return profile?.role === "admin" ? "/admin/dashboard" : "/dashboard";
   };
 
   return (

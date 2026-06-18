@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Edit2, Trash2, Plus, Loader2, X } from "lucide-react";
+import { Edit2, Trash2, Plus, Loader2, X, Eye } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type Category = {
@@ -14,6 +14,8 @@ type Category = {
 export function CategoriesTab() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   
@@ -41,6 +43,11 @@ export function CategoriesTab() {
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  const handleOpenViewModal = (category: Category) => {
+    setSelectedCategory(category);
+    setIsViewModalOpen(true);
+  };
 
   const handleOpenModal = (category?: Category) => {
     if (category) {
@@ -97,6 +104,8 @@ export function CategoriesTab() {
       const { error } = await supabase.from("categories").delete().eq("id", id);
       if (error) throw error;
       setCategories(categories.filter(c => c.id !== id));
+      setIsViewModalOpen(false);
+      setSelectedCategory(null);
     } catch (err: any) {
       console.error("Error deleting category:", err);
       alert("Error deleting category: " + err.message);
@@ -126,22 +135,20 @@ export function CategoriesTab() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {categories.map((category) => (
-            <div key={category.id} className="border border-gray-100 bg-[#F4F3EF] p-6 rounded-2xl relative group hover:shadow-md transition-all">
-              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+            <div 
+              key={category.id} 
+              onClick={() => handleOpenViewModal(category)}
+              className="border border-gray-100 bg-[#F4F3EF]/60 hover:bg-white/60 p-6 rounded-2xl relative group cursor-pointer hover:shadow-md transition-all duration-200"
+            >
+              <div className="absolute top-4 right-4" onClick={(e) => e.stopPropagation()}>
                 <button 
-                  onClick={() => handleOpenModal(category)}
-                  className="p-2 bg-white rounded-full text-gray-400 hover:text-black shadow-sm"
+                  onClick={() => handleOpenViewModal(category)}
+                  className="p-2 bg-white rounded-full text-gray-400 hover:text-black shadow-sm transition-colors"
                 >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button 
-                  onClick={() => handleDelete(category.id)}
-                  className="p-2 bg-white rounded-full text-gray-400 hover:text-red-600 shadow-sm"
-                >
-                  <Trash2 className="w-4 h-4" />
+                  <Eye className="w-4.5 h-4.5" />
                 </button>
               </div>
-              <h3 className="font-black text-xl mb-2">{category.name}</h3>
+              <h3 className="font-black text-xl mb-2 pr-8 text-black">{category.name}</h3>
               {category.description && (
                 <p className="text-[var(--text-secondary)] text-sm mb-4 line-clamp-2">{category.description}</p>
               )}
@@ -206,6 +213,63 @@ export function CategoriesTab() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Category Modal */}
+      {isViewModalOpen && selectedCategory && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-md w-full p-8 shadow-2xl relative border border-white/20 animate-in slide-in-from-bottom-4 zoom-in-95 duration-300">
+            <button 
+              onClick={() => {
+                setIsViewModalOpen(false);
+                setSelectedCategory(null);
+              }}
+              className="absolute top-6 right-6 p-2 text-gray-400 hover:text-black hover:bg-gray-100/50 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="mb-6">
+              <h2 className="text-2xl font-black mb-1">Category Details</h2>
+            </div>
+
+            <div className="space-y-6">
+              <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Category Name</h3>
+                <div className="font-black text-xl text-black">{selectedCategory.name}</div>
+              </div>
+
+              {selectedCategory.description && (
+                <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Description</h3>
+                  <p className="text-sm text-gray-700 leading-relaxed font-medium">{selectedCategory.description}</p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
+                <button
+                  onClick={() => {
+                    setIsViewModalOpen(false);
+                    handleOpenModal(selectedCategory);
+                  }}
+                  className="flex items-center gap-2 px-6 py-3 border border-gray-200 text-black font-bold rounded-xl hover:bg-gray-50 transition-all text-sm shadow-sm"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Edit Category
+                </button>
+                <button
+                  onClick={() => handleDelete(selectedCategory.id)}
+                  className="flex items-center gap-2 px-6 py-3 border border-red-200 text-red-600 font-bold rounded-xl hover:bg-red-50 hover:border-red-300 transition-all text-sm shadow-sm"
+                >
+                  <Trash2 className="w-4.5 h-4.5" />
+                  Delete Category
+                </button>
+              </div>
+
+            </div>
           </div>
         </div>
       )}
