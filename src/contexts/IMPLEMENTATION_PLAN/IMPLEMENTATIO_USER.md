@@ -43,22 +43,22 @@ This plan outlines the approach to upgrade the client dashboard (`/dashboard`) t
 ## Checklist & Progress
 
 ### Phase 1: Data Fetching Setup
-- [ ] Implement fetching of client bookings and notifications using Supabase client in `ClientDashboard`.
-- [ ] Map database records to a structured `Booking` interface including nested session fields.
+- [x] Implement fetching of client bookings and notifications using Supabase client in `ClientDashboard`.
+- [x] Map database records to a structured `Booking` interface including nested session fields.
 
 ### Phase 2: Live Metrics & Payments stats
-- [ ] Calculate "Upcoming", "Next Session", and "Completed Workouts" counts dynamically.
-- [ ] Implement the in-person payments counter by summing prices of `paid` bookings.
-- [ ] Display these metrics in interactive glassmorphic cards.
+- [x] Calculate "Upcoming", "Next Session", and "Completed Workouts" counts dynamically.
+- [x] Implement the in-person payments counter by summing prices of `paid` bookings.
+- [x] Display these metrics in interactive glassmorphic cards.
 
 ### Phase 3: Bookings Feed & View/Cancel Modal
-- [ ] Build the interactive bookings list/feed.
-- [ ] Implement the view details modal for client bookings.
-- [ ] Implement the client cancellation action inside the modal, ensuring bookings are only cancelled before start time.
+- [x] Build the interactive bookings list/feed.
+- [x] Implement the view details modal for client bookings.
+- [x] Implement the client cancellation action inside the modal, ensuring bookings are only cancelled before start time.
 
 ### Phase 4: Notification Center Integration
-- [ ] Build the notification center card with unread count badge.
-- [ ] Add the mark-as-read and delete notifications handlers.
+- [x] Build the notification center card with unread count badge.
+- [x] Add the mark-as-read and delete notifications handlers.
 
 ### Phase 5: Verification & Testing
-- [ ] Run typescript and build check (`npm run build`).
+- [x] Run typescript and build check (`npm run build`).
