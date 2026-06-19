@@ -15,7 +15,9 @@ import {
   Check, 
   Trash2,
   Loader2,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import Link from "next/link";
 
@@ -62,6 +64,19 @@ export default function ClientDashboard() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+
+  // Dashboard Calendar States
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [currentMonth, setCurrentMonth] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
 
   const fetchData = async () => {
     if (!user) return;
@@ -209,6 +224,66 @@ export default function ClientDashboard() {
       return new Date(a.sessions!.start_time).getTime() - new Date(b.sessions!.start_time).getTime();
     })[0] || null;
 
+  // Calendar Logic Helpers
+  const handlePrevMonth = () => {
+    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    setSelectedCalendarDate(null);
+  };
+
+  const handleNextMonth = () => {
+    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    setSelectedCalendarDate(null);
+  };
+
+  const getCalendarDays = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    let startDayOfWeek = firstDay.getDay();
+    startDayOfWeek = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1; // Monday start
+
+    const days = [];
+    const prevMonthEnd = new Date(year, month, 0).getDate();
+    
+    // Trailing days of previous month
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const date = new Date(year, month - 1, prevMonthEnd - i);
+      date.setHours(0, 0, 0, 0);
+      days.push({ date, isCurrentMonth: false });
+    }
+
+    // Days of current month
+    const currentMonthEnd = new Date(year, month + 1, 0).getDate();
+    for (let i = 1; i <= currentMonthEnd; i++) {
+      const date = new Date(year, month, i);
+      date.setHours(0, 0, 0, 0);
+      days.push({ date, isCurrentMonth: true });
+    }
+
+    // Leading days of next month
+    const remainingCells = days.length % 7;
+    if (remainingCells > 0) {
+      const cellsToAdd = 7 - remainingCells;
+      for (let i = 1; i <= cellsToAdd; i++) {
+        const date = new Date(year, month + 1, i);
+        date.setHours(0, 0, 0, 0);
+        days.push({ date, isCurrentMonth: false });
+      }
+    }
+
+    return days;
+  };
+
+  const getBookingsForDay = (date: Date) => {
+    return bookings.filter(b => {
+      if (!b.sessions?.start_time || b.status === "cancelled") return false;
+      const bDate = new Date(b.sessions.start_time);
+      return bDate.getDate() === date.getDate() &&
+             bDate.getMonth() === date.getMonth() &&
+             bDate.getFullYear() === date.getFullYear();
+    });
+  };
+
   const unreadNotificationsCount = notifications.filter(n => !n.is_read).length;
 
   if (loading) {
@@ -310,8 +385,35 @@ export default function ClientDashboard() {
         
         {/* Bookings Feed */}
         <div className="bg-white/80 backdrop-blur-xl border border-white/50 rounded-3xl shadow-sm p-6 md:p-8 lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-black text-black">Your Bookings</h2>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
+              <h2 className="text-2xl font-black text-black">Your Bookings</h2>
+              
+              {/* View Switcher Toggle */}
+              <div className="flex items-center bg-gray-100/80 rounded-xl p-1 text-xs">
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`px-3 py-1.5 rounded-lg font-black transition-all ${
+                    viewMode === "list"
+                      ? "bg-white text-black shadow-sm"
+                      : "text-gray-500 hover:text-black"
+                  }`}
+                >
+                  List
+                </button>
+                <button
+                  onClick={() => setViewMode("calendar")}
+                  className={`px-3 py-1.5 rounded-lg font-black transition-all ${
+                    viewMode === "calendar"
+                      ? "bg-white text-black shadow-sm"
+                      : "text-gray-500 hover:text-black"
+                  }`}
+                >
+                  Calendar
+                </button>
+              </div>
+            </div>
+
             <Link 
               href="/dashboard/bookings/new"
               className="px-4 py-2 bg-black text-white text-xs font-bold rounded-xl hover:bg-gray-800 transition-colors shadow-sm"
@@ -326,7 +428,7 @@ export default function ClientDashboard() {
               <h3 className="text-base font-bold mb-1">No bookings found</h3>
               <p className="text-xs text-[var(--text-secondary)]">You haven't scheduled any sessions yet.</p>
             </div>
-          ) : (
+          ) : viewMode === "list" ? (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -389,6 +491,160 @@ export default function ClientDashboard() {
                   })}
                 </tbody>
               </table>
+            </div>
+          ) : (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              {/* Month Navigator Header */}
+              <div className="flex justify-between items-center bg-gray-50/60 border border-gray-100 rounded-2xl p-4">
+                <span className="font-black text-black text-sm uppercase tracking-wide">
+                  {currentMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+                </span>
+                
+                <div className="flex gap-2">
+                  <button 
+                    onClick={handlePrevMonth}
+                    className="p-2 bg-white hover:bg-gray-50 border border-gray-150 rounded-xl shadow-sm transition-colors text-black cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={handleNextMonth}
+                    className="p-2 bg-white hover:bg-gray-50 border border-gray-150 rounded-xl shadow-sm transition-colors text-black cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Monthly Grid */}
+              <div className="grid grid-cols-7 gap-2">
+                {/* Week Day Labels */}
+                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label, idx) => (
+                  <div key={idx} className="font-bold text-gray-400 py-1 uppercase text-[10px] tracking-wider text-center">
+                    {label}
+                  </div>
+                ))}
+
+                {/* Day Cells */}
+                {getCalendarDays().map(({ date, isCurrentMonth }, idx) => {
+                  const dayBookings = getBookingsForDay(date);
+                  const isSelected = selectedCalendarDate && date.toDateString() === selectedCalendarDate.toDateString();
+                  const isToday = new Date().toDateString() === date.toDateString();
+
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => setSelectedCalendarDate(date)}
+                      className={`min-h-[64px] p-2 rounded-2xl border cursor-pointer relative flex flex-col justify-between transition-all select-none ${
+                        isSelected
+                          ? "bg-black text-white border-black shadow-md scale-102"
+                          : isToday
+                            ? "bg-[#F4F3EF] border-black/35 text-black hover:bg-[#eae9e4]"
+                            : isCurrentMonth
+                              ? "bg-white border-gray-100 text-black hover:border-black/20"
+                              : "bg-gray-50/30 border-gray-100/50 text-gray-300 cursor-not-allowed hover:bg-gray-50/50"
+                      }`}
+                    >
+                      <span className={`text-[10px] font-black self-start ${
+                        isSelected ? "text-white" : isCurrentMonth ? "text-black" : "text-gray-300"
+                      }`}>
+                        {date.getDate()}
+                      </span>
+
+                      {/* Day Bookings dots */}
+                      {dayBookings.length > 0 && (
+                        <div className="flex justify-center gap-1.5 mt-1.5">
+                          {dayBookings.map((b, bIdx) => (
+                            <span 
+                              key={b.id} 
+                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                isSelected ? "bg-white" : "bg-black"
+                              }`}
+                              title={b.sessions?.session_types?.title || "Class"}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Day details section */}
+              {selectedCalendarDate && (
+                <div className="bg-gray-50/50 border border-gray-150 p-6 rounded-3xl space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-black text-black text-xs uppercase tracking-wide">
+                      Workouts on {selectedCalendarDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+                    </h4>
+                    {getBookingsForDay(selectedCalendarDate).length > 0 && (
+                      <span className="px-2.5 py-0.5 bg-black text-white text-[9px] font-black rounded-full shrink-0">
+                        {getBookingsForDay(selectedCalendarDate).length} Booked
+                      </span>
+                    )}
+                  </div>
+
+                  {(() => {
+                    const dayBookings = getBookingsForDay(selectedCalendarDate);
+                    if (dayBookings.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-xs text-gray-400">
+                          <p className="mb-3">No workouts scheduled for this day.</p>
+                          <Link 
+                            href="/dashboard/bookings/new"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-black text-white text-xs font-bold rounded-xl hover:bg-gray-800 transition-colors shadow-sm"
+                          >
+                            Book a Session
+                          </Link>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-3">
+                        {dayBookings.map(b => {
+                          const startTime = b.sessions?.start_time ? new Date(b.sessions.start_time) : null;
+                          return (
+                            <div 
+                              key={b.id}
+                              onClick={() => handleOpenViewModal(b)}
+                              className="bg-white border border-gray-100 p-4 rounded-2xl hover:border-black/20 cursor-pointer transition-all flex items-center justify-between gap-4"
+                            >
+                              <div className="space-y-1">
+                                <h5 className="font-bold text-sm text-black">
+                                  {b.sessions?.session_types?.title}
+                                </h5>
+                                <div className="flex items-center gap-3 text-[10px] text-[var(--text-secondary)] font-semibold">
+                                  {startTime && (
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="w-3.5 h-3.5 text-gray-400" />
+                                      {startTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })} ({b.sessions?.session_types?.duration_minutes} mins)
+                                    </span>
+                                  )}
+                                  <span className="flex items-center gap-1">
+                                    <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                                    {b.sessions?.location}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenViewModal(b);
+                                }}
+                                className="p-2 text-gray-400 hover:text-black hover:bg-gray-50 rounded-xl transition-all border border-gray-100 shadow-sm shrink-0"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
           )}
         </div>
