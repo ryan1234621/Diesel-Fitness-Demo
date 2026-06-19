@@ -83,11 +83,11 @@ This plan outlines the approach to upgrade the client dashboard (`/dashboard`) t
 - [x] Run typescript and build check (`npm run build`).
 
 ### Phase 6: Client Booking Flow (Option A - Calendar/Agenda)
-- [ ] Create client booking page at `src/app/dashboard/bookings/new/page.tsx`
-- [ ] Fetch upcoming sessions from Supabase and filter/process remaining capacities
-- [ ] Implement the interactive desktop weekly calendar grid view
-- [ ] Implement the mobile-responsive swipable date header and agenda list
-- [ ] Add the slide-over session detail drawer with double-booking checks and capacity limit warnings
-- [ ] Implement booking creation logic (Supabase insert on `bookings` table) and transaction processing
-- [ ] Connect successful bookings to local notifications and trigger `/dashboard/bookings` redirect
-- [ ] Run production build verification (`npm run build`) and close GitHub Issue #7
+- [x] Create client booking page at `src/app/dashboard/bookings/new/page.tsx`
+- [x] Fetch upcoming sessions from Supabase and filter/process remaining capacities
+- [x] Implement the interactive desktop weekly calendar grid view
+- [x] Implement the mobile-responsive swipable date header and agenda list
+- [x] Add the slide-over session detail drawer with double-booking checks and capacity limit warnings
+- [x] Implement booking creation logic (Supabase insert on `bookings` table) and transaction processing
+- [x] Connect successful bookings to local notifications and trigger `/dashboard/bookings` redirect
+- [x] Run production build verification (`npm run build`) and close GitHub Issue #7

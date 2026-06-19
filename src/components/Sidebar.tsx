@@ -22,7 +22,7 @@ export function Sidebar({ role }: { role: "admin" | "client" }) {
   const clientLinks = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "My Bookings", href: "/dashboard/bookings", icon: Calendar },
-    { name: "Profile", href: "/dashboard/profile", icon: Users },
+    { name: "Profile", href: "/profile", icon: Users },
   ];
 
   const links = role === "admin" ? adminLinks : clientLinks;
