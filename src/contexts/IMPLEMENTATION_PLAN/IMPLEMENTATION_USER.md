@@ -93,9 +93,9 @@ This plan outlines the approach to upgrade the client dashboard (`/dashboard`) t
 - [x] Run production build verification (`npm run build`) and close GitHub Issue #7
 
 ### Phase 7: Dashboard Bookings Calendar View
-- [ ] Add View Switcher (List / Calendar) in the "Your Bookings" card on the dashboard page
-- [ ] Implement monthly calendar grid calculation (dates, active month navigation)
-- [ ] Display visual dots or badges on days with active bookings on the calendar
-- [ ] Implement click-handler to open booking details modal for calendar items
-- [ ] Ensure full responsiveness (mobile-friendly calendar grid layout)
-- [ ] Run production build verification (`npm run build`) and close GitHub Issue #8
+- [x] Add View Switcher (List / Calendar) in the "Your Bookings" card on the dashboard page
+- [x] Implement monthly calendar grid calculation (dates, active month navigation)
+- [x] Display visual dots or badges on days with active bookings on the calendar
+- [x] Implement click-handler to open booking details modal for calendar items
+- [x] Ensure full responsiveness (mobile-friendly calendar grid layout)
+- [x] Run production build verification (`npm run build`) and close GitHub Issue #8
