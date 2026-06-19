@@ -26,10 +26,10 @@ This plan outlines the approach to upgrade the client dashboard (`/dashboard`) t
   - **Next Session**: The single booking with the earliest future `start_time` that is `confirmed` or `pending`.
   - **Completed (Total Workouts)**: Count bookings where `status` is `completed` or (status is `confirmed` and `sessions.start_time < now()`).
   - **Total Payments**: Sum of session prices where `booking.payment_status = 'paid'` and booking is not cancelled.
-- **Interactive Bookings List**:
-  - Render a modern, glassmorphic table of bookings.
-  - Hover state: `hover:bg-white/60 transition-all duration-200 cursor-pointer`.
-  - Clicking a row opens a details view modal.
+- **Interactive Bookings Section (Table & Calendar View)**:
+  - Add a View Switcher toggle in the "Your Bookings" card header to toggle between "Table" (list of all bookings) and "Calendar" (monthly grid view of bookings).
+  - List view: Renders the modern, glassmorphic table of bookings with clickable rows.
+  - Calendar view: Renders a monthly grid showing calendar days. Days with scheduled bookings show indicators (colored dots/badges). Clicking a day displays a popup listing the day's classes, and clicking a class opens the booking details inspector modal.
 - **Booking Details Modal**:
   - Display Title, description, schedule date/time, duration, location, price, payment status, and booking status.
   - Allow client to cancel bookings (`status` updated to `cancelled`) if the session has not started.
@@ -91,3 +91,11 @@ This plan outlines the approach to upgrade the client dashboard (`/dashboard`) t
 - [x] Implement booking creation logic (Supabase insert on `bookings` table) and transaction processing
 - [x] Connect successful bookings to local notifications and trigger `/dashboard/bookings` redirect
 - [x] Run production build verification (`npm run build`) and close GitHub Issue #7
+
+### Phase 7: Dashboard Bookings Calendar View
+- [ ] Add View Switcher (List / Calendar) in the "Your Bookings" card on the dashboard page
+- [ ] Implement monthly calendar grid calculation (dates, active month navigation)
+- [ ] Display visual dots or badges on days with active bookings on the calendar
+- [ ] Implement click-handler to open booking details modal for calendar items
+- [ ] Ensure full responsiveness (mobile-friendly calendar grid layout)
+- [ ] Run production build verification (`npm run build`) and close GitHub Issue #8
