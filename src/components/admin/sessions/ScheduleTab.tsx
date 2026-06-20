@@ -237,11 +237,11 @@ export function ScheduleTab() {
         
         if (insertError) throw insertError;
 
-        // Fetch all active client and user profiles to notify them
+        // Fetch all active client, user, and admin profiles to notify them
         const { data: activeProfiles, error: profilesError } = await supabase
           .from("profiles")
           .select("id")
-          .in("role", ["client", "user"])
+          .in("role", ["client", "user", "admin"])
           .eq("status", "active");
 
         if (profilesError) {
