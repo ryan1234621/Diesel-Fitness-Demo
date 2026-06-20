@@ -46,13 +46,19 @@ export function TopBar() {
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "notifications",
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          setNotifications((prev) => [payload.new as Notification, ...prev].slice(0, 10));
+          if (payload.eventType === 'INSERT') {
+            setNotifications((prev) => [payload.new as Notification, ...prev].slice(0, 10));
+          } else if (payload.eventType === 'UPDATE') {
+            setNotifications((prev) => prev.map(n => n.id === payload.new.id ? (payload.new as Notification) : n));
+          } else if (payload.eventType === 'DELETE') {
+            setNotifications((prev) => prev.filter(n => n.id !== payload.old.id));
+          }
         }
       )
       .subscribe();

@@ -49,7 +49,7 @@ type Session = {
 };
 
 export default function ClientNewBooking() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const router = useRouter();
   const { success, error: toastError } = useToast();
 
@@ -259,7 +259,7 @@ export default function ClientNewBooking() {
         minute: '2-digit'
       });
       
-      await supabase.from("notifications").insert([
+      const notificationsPayload = [
         {
           user_id: user.id,
           title: "Session Booked Successfully",
@@ -267,7 +267,29 @@ export default function ClientNewBooking() {
           type: "booking",
           is_read: false
         }
-      ]);
+      ];
+
+      // Notify active admins
+      const { data: admins } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("role", "admin")
+        .eq("status", "active");
+
+      if (admins && admins.length > 0) {
+        const clientName = profile?.full_name || user.email || "A client";
+        for (const admin of admins) {
+          notificationsPayload.push({
+            user_id: admin.id,
+            title: "New Booking Received",
+            message: `${clientName} has booked "${session.session_types?.title}" for ${dateFormatted}.`,
+            type: "booking_created",
+            is_read: false
+          });
+        }
+      }
+
+      await supabase.from("notifications").insert(notificationsPayload);
 
       success("Booking confirmed successfully!");
       setIsDrawerOpen(false);

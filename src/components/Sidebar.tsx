@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Dumbbell, LayoutDashboard, Calendar, Users, Activity, Settings, LogOut, Menu, X } from "lucide-react";
+import { Dumbbell, LayoutDashboard, Calendar, Users, Activity, Settings, LogOut, Menu, X, Bell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function Sidebar({ role }: { role: "admin" | "client" }) {
@@ -16,6 +16,7 @@ export function Sidebar({ role }: { role: "admin" | "client" }) {
     { name: "Sessions", href: "/admin/sessions", icon: Activity },
     { name: "Bookings", href: "/admin/bookings", icon: Calendar },
     { name: "Clients", href: "/admin/clients", icon: Users },
+    { name: "Notifications", href: "/admin/notifications", icon: Bell },
     { name: "Settings", href: "/admin/settings", icon: Settings },
   ];
 
