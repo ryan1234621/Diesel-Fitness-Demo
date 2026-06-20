@@ -102,9 +102,13 @@ export function WeeklySchedule() {
   };
 
   const selectedWeekEnd = endOfWeek(selectedWeekStart, { weekStartsOn: 1 });
-  let displaySessions = getWeekSessions(selectedWeekStart, selectedWeekEnd);
+  
+  // Use all fetched sessions for Grid view, and filter by selected week for Calendar view
+  let displaySessions = viewMode === "calendar" 
+    ? getWeekSessions(selectedWeekStart, selectedWeekEnd) 
+    : sessions;
 
-  // Implement placeholder data if no sessions exist for the selected week
+  // Implement placeholder data if no sessions exist
   if (!loading && displaySessions.length === 0) {
     // Generate a simple deterministic offset based on the week timestamp to vary the demo schedule
     const weekSeed = selectedWeekStart.getTime() / 10000;
@@ -112,11 +116,16 @@ export function WeeklySchedule() {
     const vary2 = Math.floor(weekSeed % 4);
     const vary3 = Math.floor(weekSeed % 5);
 
+    // Provide some varied dates within the selected week for realistic placeholder rendering
+    const t1 = new Date(selectedWeekStart.getTime() + 24 * 60 * 60 * 1000 * (1 + vary1) + 8 * 60 * 60 * 1000);
+    const t2 = new Date(selectedWeekStart.getTime() + 24 * 60 * 60 * 1000 * (2 + (vary2 % 2)) + 18 * 60 * 60 * 1000);
+    const t3 = new Date(selectedWeekStart.getTime() + 24 * 60 * 60 * 1000 * (vary3) + 10 * 60 * 60 * 1000);
+
     displaySessions = [
       {
         id: "placeholder-1",
-        start_time: new Date(selectedWeekStart.getTime() + 24 * 60 * 60 * 1000 * (1 + vary1) + 8 * 60 * 60 * 1000).toISOString(),
-        end_time: new Date(selectedWeekStart.getTime() + 24 * 60 * 60 * 1000 * (1 + vary1) + 9 * 60 * 60 * 1000).toISOString(),
+        start_time: t1.toISOString(),
+        end_time: new Date(t1.getTime() + 45 * 60 * 1000).toISOString(),
         max_slots: 10,
         location: "Main Studio",
         price: 25,
@@ -126,8 +135,8 @@ export function WeeklySchedule() {
       },
       {
         id: "placeholder-2",
-        start_time: new Date(selectedWeekStart.getTime() + 24 * 60 * 60 * 1000 * (2 + (vary2 % 2)) + 18 * 60 * 60 * 1000).toISOString(),
-        end_time: new Date(selectedWeekStart.getTime() + 24 * 60 * 60 * 1000 * (2 + (vary2 % 2)) + 19 * 60 * 60 * 1000).toISOString(),
+        start_time: t2.toISOString(),
+        end_time: new Date(t2.getTime() + 60 * 60 * 1000).toISOString(),
         max_slots: 15,
         location: "Outdoor Turf",
         price: 20,
@@ -137,8 +146,8 @@ export function WeeklySchedule() {
       },
       {
         id: "placeholder-3",
-        start_time: new Date(selectedWeekStart.getTime() + 24 * 60 * 60 * 1000 * (vary3) + 10 * 60 * 60 * 1000).toISOString(),
-        end_time: new Date(selectedWeekStart.getTime() + 24 * 60 * 60 * 1000 * (vary3) + 11 * 60 * 60 * 1000).toISOString(),
+        start_time: t3.toISOString(),
+        end_time: new Date(t3.getTime() + 45 * 60 * 1000).toISOString(),
         max_slots: 8,
         location: "Yoga Studio",
         price: 30,
@@ -147,6 +156,11 @@ export function WeeklySchedule() {
         isPlaceholder: true
       }
     ];
+
+    // If Grid view, sort the placeholders chronologically
+    if (viewMode === "grid") {
+      displaySessions.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+    }
   }
 
   return (
@@ -166,7 +180,7 @@ export function WeeklySchedule() {
             }`}
           >
             <LayoutGrid className="w-4 h-4" />
-            Grid
+            Upcoming List
           </button>
           <button
             onClick={() => setViewMode("calendar")}
@@ -175,37 +189,39 @@ export function WeeklySchedule() {
             }`}
           >
             <CalendarDays className="w-4 h-4" />
-            Calendar
+            Book via Calendar
           </button>
         </div>
       </div>
 
-      {/* Week Selector */}
-      <div className="flex overflow-x-auto pb-6 mb-8 gap-3 snap-x hide-scrollbar">
-        {upcomingWeeks.map((week, i) => {
-          const isSelected = selectedWeekStart.getTime() === week.start.getTime();
-          const weekLabel = i === 0 ? "This Week" : i === 1 ? "Next Week" : `Week ${i + 1}`;
-          
-          return (
-            <button
-              key={i}
-              onClick={() => setSelectedWeekStart(week.start)}
-              className={`snap-start shrink-0 flex flex-col items-center justify-center px-6 py-4 rounded-2xl border transition-all ${
-                isSelected
-                  ? "bg-black text-white border-black shadow-lg scale-105"
-                  : "bg-white text-black border-gray-200 hover:border-gray-400"
-              }`}
-            >
-              <span className={`text-xs font-bold uppercase mb-1 ${isSelected ? "text-gray-300" : "text-gray-500"}`}>
-                {weekLabel}
-              </span>
-              <span className="text-sm font-black whitespace-nowrap">
-                {format(week.start, "MMM d")} - {format(week.end, "MMM d")}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      {/* Week Selector (Only visible in Calendar view) */}
+      {viewMode === "calendar" && (
+        <div className="flex overflow-x-auto pb-6 mb-8 gap-3 snap-x hide-scrollbar">
+          {upcomingWeeks.map((week, i) => {
+            const isSelected = selectedWeekStart.getTime() === week.start.getTime();
+            const weekLabel = i === 0 ? "This Week" : i === 1 ? "Next Week" : `Week ${i + 1}`;
+            
+            return (
+              <button
+                key={i}
+                onClick={() => setSelectedWeekStart(week.start)}
+                className={`snap-start shrink-0 flex flex-col items-center justify-center px-6 py-4 rounded-2xl border transition-all ${
+                  isSelected
+                    ? "bg-black text-white border-black shadow-lg scale-105"
+                    : "bg-white text-black border-gray-200 hover:border-gray-400"
+                }`}
+              >
+                <span className={`text-xs font-bold uppercase mb-1 ${isSelected ? "text-gray-300" : "text-gray-500"}`}>
+                  {weekLabel}
+                </span>
+                <span className="text-sm font-black whitespace-nowrap">
+                  {format(week.start, "MMM d")} - {format(week.end, "MMM d")}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Sessions Content */}
       <div className="min-h-[300px]">
@@ -236,7 +252,7 @@ export function WeeklySchedule() {
                     
                     <div className="flex justify-between items-start mb-4">
                       <div className="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 text-xs font-bold uppercase tracking-wider text-gray-600">
-                        {format(sessionDate, "EEE, h:mm a")}
+                        {format(sessionDate, "MMM d, h:mm a")}
                       </div>
                       {isFull ? (
                         <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md">Fully Booked</span>
@@ -265,16 +281,11 @@ export function WeeklySchedule() {
                         {session.price > 0 ? `£${session.price.toFixed(2)}` : "Free"}
                       </div>
                       <button
-                        onClick={(e) => handleBookClick(e, session.id, session.isPlaceholder)}
-                        disabled={isFull}
-                        className={`group flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                          isFull 
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                            : 'bg-black text-white hover:bg-gray-800 hover:shadow-md'
-                        }`}
+                        onClick={() => setViewMode("calendar")}
+                        className="group flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-black transition-all"
                       >
-                        {isFull ? "Waitlist Full" : "Book Now"}
-                        {!isFull && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+                        <CalendarDays className="w-4 h-4 text-black group-hover:scale-110 transition-transform" />
+                        Book via Calendar
                       </button>
                     </div>
                   </div>
