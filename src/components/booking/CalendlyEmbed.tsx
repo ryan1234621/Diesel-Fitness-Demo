@@ -31,7 +31,7 @@ export function CalendlyEmbed({ url, prefill }: CalendlyEmbedProps) {
   if (!mounted) {
     return (
       <div className="w-full min-h-[650px] relative rounded-3xl overflow-hidden shadow-sm border border-gray-100 bg-gray-50 flex items-center justify-center animate-pulse">
-        <div className="w-8 h-8 border-4 border-gray-200 border-t-[#54f4fc] rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -46,11 +46,11 @@ export function CalendlyEmbed({ url, prefill }: CalendlyEmbedProps) {
           width: "100%"
         }}
         pageSettings={{
-          backgroundColor: "101010",
+          backgroundColor: "ffffff",
           hideEventTypeDetails: false,
           hideLandingPageDetails: false,
-          primaryColor: "54f4fc",
-          textColor: "ffffff",
+          primaryColor: "111111",
+          textColor: "111111",
           hideGdprBanner: true
         }}
       />

@@ -56,11 +56,11 @@ export function CalendlyModalButton({
       className={className}
       prefill={prefill}
       pageSettings={{
-        backgroundColor: "101010",
+        backgroundColor: "ffffff",
         hideEventTypeDetails: false,
         hideLandingPageDetails: false,
-        primaryColor: "54f4fc",
-        textColor: "ffffff",
+        primaryColor: "111111",
+        textColor: "111111",
         hideGdprBanner: true
       }}
     />
