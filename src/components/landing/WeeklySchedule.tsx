@@ -101,7 +101,7 @@ export function WeeklySchedule() {
     e.preventDefault();
     
     if (!user) {
-      router.push("/login");
+      router.push("/signup");
     } else if (profile?.role === "admin") {
       router.push("/admin/sessions");
     } else {
