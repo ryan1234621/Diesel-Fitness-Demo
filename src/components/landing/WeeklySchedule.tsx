@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
-import { format, addDays, isSameDay } from "date-fns";
+import { format, addWeeks, startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
 import { Loader2, Calendar as CalendarIcon, MapPin, Clock, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -23,6 +23,7 @@ type Session = {
   price: number;
   session_types: SessionType | null;
   bookings: { id: string }[];
+  isPlaceholder?: boolean;
 };
 
 export function WeeklySchedule() {
@@ -30,17 +31,23 @@ export function WeeklySchedule() {
   const router = useRouter();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   
-  // Generate next 14 days
-  const upcomingDays = Array.from({ length: 14 }).map((_, i) => addDays(new Date(), i));
+  // Initialize with current week
+  const today = new Date();
+  const [selectedWeekStart, setSelectedWeekStart] = useState<Date>(startOfWeek(today, { weekStartsOn: 1 }));
+  
+  // Generate next 4 weeks
+  const upcomingWeeks = Array.from({ length: 4 }).map((_, i) => ({
+    start: addWeeks(startOfWeek(today, { weekStartsOn: 1 }), i),
+    end: endOfWeek(addWeeks(startOfWeek(today, { weekStartsOn: 1 }), i), { weekStartsOn: 1 })
+  }));
 
   useEffect(() => {
     const fetchSchedule = async () => {
       setLoading(true);
       try {
         const now = new Date().toISOString();
-        const endDate = addDays(new Date(), 14).toISOString();
+        const endDate = upcomingWeeks[upcomingWeeks.length - 1].end.toISOString();
 
         const { data, error } = await supabase
           .from("sessions")
@@ -71,12 +78,19 @@ export function WeeklySchedule() {
     fetchSchedule();
   }, []);
 
-  const getDaySessions = (date: Date) => {
-    return sessions.filter((s) => isSameDay(new Date(s.start_time), date));
+  const getWeekSessions = (weekStart: Date, weekEnd: Date) => {
+    return sessions.filter((s) => 
+      isWithinInterval(new Date(s.start_time), { start: weekStart, end: weekEnd })
+    );
   };
 
-  const handleBookClick = (e: React.MouseEvent, sessionId: string) => {
+  const handleBookClick = (e: React.MouseEvent, sessionId: string, isPlaceholder: boolean = false) => {
     e.preventDefault();
+    if (isPlaceholder) {
+      alert("This is a placeholder session for demonstration purposes.");
+      return;
+    }
+    
     if (!user) {
       router.push("/login");
     } else if (profile?.role === "admin") {
@@ -86,7 +100,47 @@ export function WeeklySchedule() {
     }
   };
 
-  const displaySessions = getDaySessions(selectedDate);
+  const selectedWeekEnd = endOfWeek(selectedWeekStart, { weekStartsOn: 1 });
+  let displaySessions = getWeekSessions(selectedWeekStart, selectedWeekEnd);
+
+  // Implement placeholder data if no sessions exist for the selected week
+  if (!loading && displaySessions.length === 0) {
+    displaySessions = [
+      {
+        id: "placeholder-1",
+        start_time: new Date(selectedWeekStart.getTime() + 24 * 60 * 60 * 1000 * 1 + 8 * 60 * 60 * 1000).toISOString(), // Tuesday 8am
+        end_time: new Date(selectedWeekStart.getTime() + 24 * 60 * 60 * 1000 * 1 + 9 * 60 * 60 * 1000).toISOString(),
+        max_slots: 10,
+        location: "Main Studio",
+        price: 25,
+        session_types: { id: "t1", title: "HIIT Full Body", duration_minutes: 45 },
+        bookings: [],
+        isPlaceholder: true
+      },
+      {
+        id: "placeholder-2",
+        start_time: new Date(selectedWeekStart.getTime() + 24 * 60 * 60 * 1000 * 3 + 18 * 60 * 60 * 1000).toISOString(), // Thursday 6pm
+        end_time: new Date(selectedWeekStart.getTime() + 24 * 60 * 60 * 1000 * 3 + 19 * 60 * 60 * 1000).toISOString(),
+        max_slots: 15,
+        location: "Outdoor Turf",
+        price: 20,
+        session_types: { id: "t2", title: "Strength & Conditioning", duration_minutes: 60 },
+        bookings: [{ id: "b1" }, { id: "b2" }], // Fake bookings
+        isPlaceholder: true
+      },
+      {
+        id: "placeholder-3",
+        start_time: new Date(selectedWeekStart.getTime() + 24 * 60 * 60 * 1000 * 5 + 10 * 60 * 60 * 1000).toISOString(), // Saturday 10am
+        end_time: new Date(selectedWeekStart.getTime() + 24 * 60 * 60 * 1000 * 5 + 11 * 60 * 60 * 1000).toISOString(),
+        max_slots: 8,
+        location: "Yoga Studio",
+        price: 30,
+        session_types: { id: "t3", title: "Recovery Flow", duration_minutes: 45 },
+        bookings: [],
+        isPlaceholder: true
+      }
+    ];
+  }
 
   return (
     <section className="py-20 bg-[var(--background)] px-6 relative z-10 w-full max-w-6xl mx-auto">
@@ -97,28 +151,28 @@ export function WeeklySchedule() {
         </p>
       </div>
 
-      {/* Date Selector */}
+      {/* Week Selector */}
       <div className="flex overflow-x-auto pb-6 mb-8 gap-3 snap-x hide-scrollbar">
-        {upcomingDays.map((date, i) => {
-          const isSelected = isSameDay(selectedDate, date);
-          const hasSessions = getDaySessions(date).length > 0;
+        {upcomingWeeks.map((week, i) => {
+          const isSelected = selectedWeekStart.getTime() === week.start.getTime();
+          const weekLabel = i === 0 ? "This Week" : i === 1 ? "Next Week" : `Week ${i + 1}`;
+          
           return (
             <button
               key={i}
-              onClick={() => setSelectedDate(date)}
-              className={`snap-start shrink-0 flex flex-col items-center justify-center w-20 h-24 rounded-2xl border transition-all ${
+              onClick={() => setSelectedWeekStart(week.start)}
+              className={`snap-start shrink-0 flex flex-col items-center justify-center px-6 py-4 rounded-2xl border transition-all ${
                 isSelected
                   ? "bg-black text-white border-black shadow-lg scale-105"
                   : "bg-white text-black border-gray-200 hover:border-gray-400"
               }`}
             >
               <span className={`text-xs font-bold uppercase mb-1 ${isSelected ? "text-gray-300" : "text-gray-500"}`}>
-                {format(date, "EEE")}
+                {weekLabel}
               </span>
-              <span className="text-2xl font-black">{format(date, "d")}</span>
-              {hasSessions && (
-                <div className={`w-1.5 h-1.5 rounded-full mt-2 ${isSelected ? "bg-white" : "bg-black"}`} />
-              )}
+              <span className="text-sm font-black whitespace-nowrap">
+                {format(week.start, "MMM d")} - {format(week.end, "MMM d")}
+              </span>
             </button>
           );
         })}
@@ -130,27 +184,28 @@ export function WeeklySchedule() {
           <div className="flex justify-center items-center h-48">
             <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
           </div>
-        ) : displaySessions.length === 0 ? (
-          <div className="bg-white/50 backdrop-blur-sm border border-gray-100 rounded-3xl p-12 text-center shadow-sm">
-            <CalendarIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-bold mb-2">No sessions scheduled</h3>
-            <p className="text-[var(--text-secondary)]">There are no elite training sessions available on this day.</p>
-          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {displaySessions.map((session) => {
               const bookedCount = session.bookings?.length || 0;
               const isFull = bookedCount >= session.max_slots;
               const spotsLeft = session.max_slots - bookedCount;
+              const sessionDate = new Date(session.start_time);
 
               return (
                 <div 
                   key={session.id} 
-                  className="bg-white/80 backdrop-blur-md border border-white/50 rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all flex flex-col"
+                  className="bg-white/80 backdrop-blur-md border border-white/50 rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all flex flex-col relative overflow-hidden"
                 >
+                  {session.isPlaceholder && (
+                    <div className="absolute top-3 right-[-30px] bg-yellow-400 text-black text-[10px] font-black uppercase tracking-widest py-1 px-10 rotate-45 opacity-90 shadow-sm z-10">
+                      Demo
+                    </div>
+                  )}
+                  
                   <div className="flex justify-between items-start mb-4">
                     <div className="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 text-xs font-bold uppercase tracking-wider text-gray-600">
-                      {format(new Date(session.start_time), "h:mm a")}
+                      {format(sessionDate, "EEE, h:mm a")}
                     </div>
                     {isFull ? (
                       <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md">Fully Booked</span>
@@ -161,7 +216,7 @@ export function WeeklySchedule() {
                     )}
                   </div>
                   
-                  <h3 className="text-xl font-black mb-2">{session.session_types?.title}</h3>
+                  <h3 className="text-xl font-black mb-2 pr-4">{session.session_types?.title}</h3>
                   
                   <div className="space-y-2 mb-6 flex-1">
                     <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)] font-medium">
@@ -179,7 +234,7 @@ export function WeeklySchedule() {
                       {session.price > 0 ? `£${session.price.toFixed(2)}` : "Free"}
                     </div>
                     <button
-                      onClick={(e) => handleBookClick(e, session.id)}
+                      onClick={(e) => handleBookClick(e, session.id, session.isPlaceholder)}
                       disabled={isFull}
                       className={`group flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
                         isFull 
