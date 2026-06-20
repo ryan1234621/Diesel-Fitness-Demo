@@ -236,7 +236,7 @@ export function WeeklySchedule() {
             <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-7 gap-4 bg-white/40 md:p-4 md:rounded-3xl md:border md:border-white/50 backdrop-blur-md">
+          <div className="flex md:grid md:grid-cols-7 gap-4 overflow-x-auto snap-x hide-scrollbar bg-white/40 p-4 rounded-3xl border border-white/50 backdrop-blur-md">
             {Array.from({ length: 7 }).map((_, idx) => {
               const day = new Date(selectedWeekStart);
               day.setDate(selectedWeekStart.getDate() + idx);
@@ -248,12 +248,9 @@ export function WeeklySchedule() {
                        sDate.getFullYear() === day.getFullYear();
               });
               const isToday = new Date().toDateString() === day.toDateString();
-              
-              // Hide empty days on mobile to save vertical space
-              const hideOnMobile = daySessions.length === 0 ? 'hidden md:flex' : 'flex';
 
               return (
-                <div key={idx} className={`flex-col min-h-[150px] md:min-h-[450px] space-y-3 ${hideOnMobile}`}>
+                <div key={idx} className="flex-col min-w-[280px] md:min-w-0 md:w-auto snap-center shrink-0 min-h-[450px] space-y-3 flex">
                   <div className={`p-3 rounded-2xl text-center flex flex-col border ${
                     isToday ? 'bg-black text-white border-black shadow-sm' : 'bg-white/80 border-white/50'
                   }`}>
