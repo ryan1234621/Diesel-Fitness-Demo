@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/contexts/ToastContext";
 
 export default function ProfilePage() {
-  const { user, role, loading, avatarSignedUrl, refreshAvatar } = useAuth();
+  const { user, profile, loading, avatarSignedUrl, refreshAvatar } = useAuth();
   const router = useRouter();
   const { error, success } = useToast();
   
@@ -18,6 +18,11 @@ export default function ProfilePage() {
     firstName: "",
     lastName: "",
     fullName: "",
+    email: "",
+    role: "",
+    status: "",
+    createdAt: "",
+    updatedAt: "",
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -32,7 +37,7 @@ export default function ProfilePage() {
       if (!user) return;
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name")
+        .select("full_name, email, role, status, created_at, updated_at")
         .eq("id", user.id)
         .single();
       
@@ -42,6 +47,11 @@ export default function ProfilePage() {
           fullName: data.full_name || "Unknown User",
           firstName: parts[0] || "",
           lastName: parts.slice(1).join(" ") || "",
+          email: data.email || "",
+          role: data.role || "",
+          status: data.status || "",
+          createdAt: data.created_at ? new Date(data.created_at).toLocaleDateString() : "",
+          updatedAt: data.updated_at ? new Date(data.updated_at).toLocaleDateString() : "",
         });
       }
     }
@@ -153,7 +163,7 @@ export default function ProfilePage() {
     );
   }
 
-  const goBackUrl = role === "admin" ? "/admin/dashboard" : "/dashboard";
+  const goBackUrl = profile?.role === "admin" ? "/admin/dashboard" : "/dashboard";
 
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col items-center py-12 px-6">
@@ -212,7 +222,7 @@ export default function ProfilePage() {
                 <Mail className="w-4 h-4" /> {user.email}
               </p>
               <span className="inline-flex items-center gap-1 mt-3 px-3 py-1 bg-gray-100 text-black text-xs font-bold uppercase tracking-wide rounded-full">
-                <Shield className="w-3 h-3" /> {role}
+                <Shield className="w-3 h-3" /> {profile?.role}
               </span>
             </div>
           </div>
@@ -237,6 +247,51 @@ export default function ProfilePage() {
                   value={profileData.lastName}
                   onChange={(e) => setProfileData({...profileData, lastName: e.target.value})}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-black transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold uppercase tracking-wide">Email</label>
+                <input
+                  type="text"
+                  disabled
+                  value={profileData.email}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold uppercase tracking-wide">Account Role</label>
+                <input
+                  type="text"
+                  disabled
+                  value={profileData.role}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed uppercase"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold uppercase tracking-wide">Account Status</label>
+                <input
+                  type="text"
+                  disabled
+                  value={profileData.status}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed uppercase"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold uppercase tracking-wide">Member Since</label>
+                <input
+                  type="text"
+                  disabled
+                  value={profileData.createdAt}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-bold uppercase tracking-wide">Last Updated</label>
+                <input
+                  type="text"
+                  disabled
+                  value={profileData.updatedAt}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed"
                 />
               </div>
             </div>

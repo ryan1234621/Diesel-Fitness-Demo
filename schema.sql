@@ -16,9 +16,55 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- Enable Row Level Security
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- 2. SESSION TYPES TABLE
+-- 2. CATEGORIES TABLE
+CREATE TABLE IF NOT EXISTS public.categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Categories - Public Read" ON public.categories
+  FOR SELECT USING (true);
+
+CREATE POLICY "Categories - Admin All Access" ON public.categories
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles 
+      WHERE profiles.id = auth.uid() 
+      AND profiles.role = 'admin'
+    )
+  );
+
+-- 3. NOTIFICATIONS TABLE
+CREATE TABLE IF NOT EXISTS public.notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    type TEXT NOT NULL,
+    is_read BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Notifications - Select Own" ON public.notifications
+  FOR SELECT USING (user_id = auth.uid());
+
+CREATE POLICY "Notifications - Update Own" ON public.notifications
+  FOR UPDATE USING (user_id = auth.uid());
+
+CREATE POLICY "Notifications - Insert Policy" ON public.notifications
+  FOR INSERT WITH CHECK (user_id = auth.uid() OR public.is_admin());
+
+-- 4. SESSION TYPES TABLE
 CREATE TABLE IF NOT EXISTS public.session_types (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    category_id UUID REFERENCES public.categories(id) ON DELETE SET NULL,
     title TEXT NOT NULL,
     description TEXT,
     duration_minutes INTEGER NOT NULL DEFAULT 60 CONSTRAINT positive_duration CHECK (duration_minutes > 0),
@@ -302,3 +348,30 @@ CREATE POLICY "Availability Exceptions - Active Users View" ON public.availabili
 CREATE POLICY "Availability Exceptions - Admin Management" ON public.availability_exceptions
   TO authenticated
   USING (public.is_admin());
+
+-- ==========================================
+-- STORAGE BUCKETS & POLICIES
+-- ==========================================
+
+-- session_images bucket
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('session_images', 'session_images', true)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "Session Images Public Access" ON storage.objects
+FOR SELECT USING (bucket_id = 'session_images');
+
+CREATE POLICY "Session Images Admin Insert" ON storage.objects
+FOR INSERT WITH CHECK (
+  bucket_id = 'session_images' AND public.is_admin()
+);
+
+CREATE POLICY "Session Images Admin Update" ON storage.objects
+FOR UPDATE USING (
+  bucket_id = 'session_images' AND public.is_admin()
+);
+
+CREATE POLICY "Session Images Admin Delete" ON storage.objects
+FOR DELETE USING (
+  bucket_id = 'session_images' AND public.is_admin()
+);

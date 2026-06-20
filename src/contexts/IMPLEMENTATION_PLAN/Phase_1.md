@@ -72,7 +72,7 @@
 - Ensure the profile button opens a dropdown menu with "Profile" and "Log Out".
 
 ### Checklist
-- [ ] Create the role-agnostic profile page.
-- [ ] Add the profile button to the root page.
-- [ ] Implement the dropdown menu with links to "Profile" and "Log Out".
-- [ ] Verify "Log Out" remains functional.
+- [x] Create the role-agnostic profile page.
+- [x] Add the profile button to the root page.
+- [x] Implement the dropdown menu with links to "Profile" and "Log Out".
+- [x] Verify "Log Out" remains functional.

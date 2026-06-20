@@ -7,22 +7,22 @@ import { Sidebar } from "@/components/Sidebar";
 import { Loader2 } from "lucide-react";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const { user, role, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading) {
       if (!user) {
         router.push("/login");
-      } else if (role === "admin") {
+      } else if (profile?.role === "admin") {
         router.push("/admin/dashboard");
-      } else if (role === "banned") {
+      } else if (profile?.role === "banned") {
         router.push("/banned");
       }
     }
-  }, [user, role, loading, router]);
+  }, [user, profile, loading, router]);
 
-  if (loading || role === "banned" || !user) {
+  if (loading || profile?.role === "banned" || !user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--background)]">
         <Loader2 className="w-8 h-8 animate-spin mb-4" />

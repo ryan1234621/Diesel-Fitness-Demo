@@ -1,24 +1,620 @@
 "use client";
 
-import { Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
+import { 
+  Search, 
+  Filter, 
+  MoreVertical, 
+  Loader2, 
+  CheckCircle, 
+  XCircle, 
+  Calendar as CalendarIcon, 
+  User as UserIcon, 
+  MapPin, 
+  Clock, 
+  CreditCard,
+  CalendarDays,
+  CalendarRange,
+  SlidersHorizontal,
+  Tags,
+  Eye,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown
+} from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
-export default function AdminBookings() {
+type Booking = {
+  id: string;
+  status: string;
+  payment_status: string;
+  created_at: string;
+  profiles: {
+    full_name: string | null;
+    email: string;
+  };
+  sessions: {
+    start_time: string;
+    end_time: string;
+    location: string;
+    price: number;
+    session_types: {
+      title: string;
+      duration_minutes: number;
+    };
+  };
+};
+
+export default function BookingsManagement() {
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Filter States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sessionTypeFilter, setSessionTypeFilter] = useState<string>("all");
+  const [dateFilterType, setDateFilterType] = useState<"all" | "today" | "week" | "month" | "custom">("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  
+  const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
+  const [inspectingBooking, setInspectingBooking] = useState<Booking | null>(null);
+
+  // Sorting States
+  const [sortField, setSortField] = useState<"client" | "session" | "date" | "price" | "payment" | "status">("date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+  const handleSort = (field: typeof sortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const renderSortHeader = (field: typeof sortField, label: string, align: "left" | "right" = "left") => {
+    const isActive = sortField === field;
+    return (
+      <th 
+        onClick={() => handleSort(field)}
+        className={`py-4 px-6 font-bold text-[var(--text-secondary)] uppercase text-xs tracking-wider cursor-pointer hover:text-black select-none transition-colors ${
+          align === "right" ? "text-right" : "text-left"
+        }`}
+      >
+        <div className={`flex items-center gap-1.5 ${align === "right" ? "justify-end" : "justify-start"}`}>
+          <span>{label}</span>
+          <span className="text-gray-400 shrink-0">
+            {isActive ? (
+              sortDirection === "asc" ? (
+                <ArrowUp className="w-3.5 h-3.5 text-black" />
+              ) : (
+                <ArrowDown className="w-3.5 h-3.5 text-black" />
+              )
+            ) : (
+              <ArrowUpDown className="w-3.5 h-3.5 opacity-40 hover:text-black transition-opacity" />
+            )}
+          </span>
+        </div>
+      </th>
+    );
+  };
+
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("bookings")
+        .select(`
+          *,
+          profiles (full_name, email),
+          sessions (
+            start_time,
+            end_time,
+            location,
+            price,
+            session_types (title, duration_minutes)
+          )
+        `)
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      setBookings((data || []) as any);
+    } catch (err: any) {
+      console.error("Failed to fetch bookings:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  const updateStatus = async (id: string, newStatus: string) => {
+    try {
+      // Fetch old booking for audit trail
+      const { data: oldBooking } = await supabase
+        .from("bookings")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: newStatus })
+        .eq("id", id);
+      
+      if (error) throw error;
+
+      // Log action to bookings_history
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("bookings_history").insert({
+          booking_id: id,
+          action: `status_updated_to_${newStatus}`,
+          changed_by: user.id,
+          previous_data: oldBooking,
+          new_data: { ...oldBooking, status: newStatus }
+        });
+      }
+
+      setBookings(bookings.map(b => b.id === id ? { ...b, status: newStatus } : b));
+    } catch (err: any) {
+      console.error("Error updating booking:", err);
+      alert("Error updating booking: " + err.message);
+    } finally {
+      setActionMenuOpen(null);
+    }
+  };
+
+  // Get unique session type titles from bookings
+  const sessionTypes = Array.from(
+    new Set(bookings.map(b => b.sessions?.session_types?.title).filter(Boolean))
+  );
+
+  const filteredBookings = bookings.filter(booking => {
+    const matchesSearch = 
+      (booking.profiles?.full_name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+      (booking.profiles?.email.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+      (booking.sessions?.session_types?.title.toLowerCase() || "").includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = statusFilter === "all" || booking.status === statusFilter;
+    const matchesSessionType = sessionTypeFilter === "all" || booking.sessions?.session_types?.title === sessionTypeFilter;
+
+    // Date Filtering
+    let matchesDate = true;
+    if (booking.sessions?.start_time) {
+      const sessionDate = new Date(booking.sessions.start_time);
+      const now = new Date();
+      
+      if (dateFilterType === "today") {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        matchesDate = sessionDate >= today && sessionDate < tomorrow;
+      } else if (dateFilterType === "week") {
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday start
+        startOfWeek.setHours(0, 0, 0, 0);
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 7);
+        matchesDate = sessionDate >= startOfWeek && sessionDate < endOfWeek;
+      } else if (dateFilterType === "month") {
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        matchesDate = sessionDate >= startOfMonth && sessionDate < endOfMonth;
+      } else if (dateFilterType === "custom") {
+        const start = startDate ? new Date(`${startDate}T00:00:00`) : null;
+        const end = endDate ? new Date(`${endDate}T23:59:59`) : null;
+        
+        if (start && end) {
+          matchesDate = sessionDate >= start && sessionDate <= end;
+        } else if (start) {
+          matchesDate = sessionDate >= start;
+        } else if (end) {
+          matchesDate = sessionDate <= end;
+        }
+      }
+    }
+
+    return matchesSearch && matchesStatus && matchesSessionType && matchesDate;
+  });
+
+  const sortedBookings = [...filteredBookings].sort((a, b) => {
+    let aVal: any = "";
+    let bVal: any = "";
+
+    switch (sortField) {
+      case "client":
+        aVal = a.profiles?.full_name || a.profiles?.email || "";
+        bVal = b.profiles?.full_name || b.profiles?.email || "";
+        break;
+      case "session":
+        aVal = a.sessions?.session_types?.title || "";
+        bVal = b.sessions?.session_types?.title || "";
+        break;
+      case "date":
+        aVal = a.sessions?.start_time ? new Date(a.sessions.start_time).getTime() : 0;
+        bVal = b.sessions?.start_time ? new Date(b.sessions.start_time).getTime() : 0;
+        break;
+      case "price":
+        aVal = a.sessions?.price || 0;
+        bVal = b.sessions?.price || 0;
+        break;
+      case "payment":
+        aVal = a.payment_status || "";
+        bVal = b.payment_status || "";
+        break;
+      case "status":
+        aVal = a.status || "";
+        bVal = b.status || "";
+        break;
+    }
+
+    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex justify-between items-end">
+    <div className="space-y-8 animate-in fade-in duration-500 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-black tracking-tight mb-2">All Bookings</h1>
-          <p className="text-[var(--text-secondary)]">View and manage all client reservations.</p>
+          <h2 className="text-3xl font-black tracking-tight mb-1">Booking Management</h2>
+          <p className="text-[var(--text-secondary)]">Review and manage client session bookings.</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-8 text-center py-20">
-          <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-bold mb-1">No bookings yet</h3>
-          <p className="text-[var(--text-secondary)]">Client bookings will appear here once they are made.</p>
+      {/* Content Area with Glassmorphism */}
+      <div className="bg-white/80 backdrop-blur-xl border border-white/50 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-8 min-h-[500px] relative overflow-hidden">
+        {/* Decorative background blob */}
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-gradient-to-br from-gray-100 to-transparent blur-3xl opacity-50 pointer-events-none"></div>
+
+        {/* Filters Panel */}
+        <div className="space-y-4 mb-6 relative z-10">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search Bar */}
+            <div className="relative flex-1">
+              <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input 
+                type="text" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by client name or session..." 
+                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200/60 bg-white/50 backdrop-blur-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/10 transition-all shadow-sm font-medium"
+              />
+            </div>
+            
+            {/* Status Filter */}
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="flex items-center justify-center gap-2 pl-6 pr-10 py-3 border border-gray-200/60 rounded-xl font-bold hover:bg-gray-50/50 transition-colors appearance-none bg-white/50 backdrop-blur-sm min-w-[150px] shadow-sm"
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              <Filter className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+            </div>
+
+            {/* Session Type Filter */}
+            <div className="relative">
+              <select
+                value={sessionTypeFilter}
+                onChange={(e) => setSessionTypeFilter(e.target.value)}
+                className="flex items-center justify-center gap-2 pl-6 pr-10 py-3 border border-gray-200/60 rounded-xl font-bold hover:bg-gray-50/50 transition-colors appearance-none bg-white/50 backdrop-blur-sm min-w-[180px] shadow-sm"
+              >
+                <option value="all">All Sessions</option>
+                {sessionTypes.map(title => (
+                  <option key={title} value={title}>{title}</option>
+                ))}
+              </select>
+              <Tags className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Date Filters Bar */}
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <span className="text-xs font-black uppercase text-[var(--text-secondary)] tracking-wider mr-2">Date:</span>
+            
+            <button
+              onClick={() => setDateFilterType("all")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                dateFilterType === "all"
+                  ? "bg-black text-white border-black"
+                  : "bg-white/50 border-gray-200/60 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5" /> All Time
+            </button>
+
+            <button
+              onClick={() => setDateFilterType("today")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                dateFilterType === "today"
+                  ? "bg-black text-white border-black"
+                  : "bg-white/50 border-gray-200/60 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <CalendarIcon className="w-3.5 h-3.5" /> Today
+            </button>
+
+            <button
+              onClick={() => setDateFilterType("week")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                dateFilterType === "week"
+                  ? "bg-black text-white border-black"
+                  : "bg-white/50 border-gray-200/60 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <CalendarDays className="w-3.5 h-3.5" /> This Week
+            </button>
+
+            <button
+              onClick={() => setDateFilterType("month")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                dateFilterType === "month"
+                  ? "bg-black text-white border-black"
+                  : "bg-white/50 border-gray-200/60 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <CalendarRange className="w-3.5 h-3.5" /> This Month
+            </button>
+
+            <button
+              onClick={() => setDateFilterType("custom")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                dateFilterType === "custom"
+                  ? "bg-black text-white border-black"
+                  : "bg-white/50 border-gray-200/60 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" /> Custom...
+            </button>
+
+            {/* Custom Date Inputs */}
+            {dateFilterType === "custom" && (
+              <div className="flex items-center gap-2 pl-2 border-l border-gray-200 animate-in fade-in slide-in-from-left-2 duration-300">
+                <input 
+                  type="date" 
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-200 rounded-xl text-xs font-bold bg-white text-black focus:outline-none focus:ring-1 focus:ring-black"
+                />
+                <span className="text-gray-400 text-xs font-bold">to</span>
+                <input 
+                  type="date" 
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-200 rounded-xl text-xs font-bold bg-white text-black focus:outline-none focus:ring-1 focus:ring-black"
+                />
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Data Table */}
+        {loading ? (
+          <div className="flex justify-center py-20 relative z-10">
+            <Loader2 className="w-10 h-10 animate-spin text-gray-400" />
+          </div>
+        ) : filteredBookings.length === 0 ? (
+          <div className="text-center py-20 text-[var(--text-secondary)] border-2 border-dashed border-gray-200/60 rounded-3xl relative z-10 bg-white/30 backdrop-blur-sm">
+            No bookings match your criteria.
+          </div>
+        ) : (
+          <div className="overflow-x-auto relative z-10">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  {renderSortHeader("client", "Client")}
+                  {renderSortHeader("session", "Session")}
+                  {renderSortHeader("date", "Date & Time")}
+                  {renderSortHeader("price", "Price")}
+                  {renderSortHeader("payment", "Payment")}
+                  {renderSortHeader("status", "Status")}
+                  <th className="py-4 px-6 font-bold text-[var(--text-secondary)] uppercase text-xs tracking-wider text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50/50">
+                {sortedBookings.map((booking) => {
+                  const sessionStart = new Date(booking.sessions?.start_time || "");
+                  return (
+                    <tr 
+                      key={booking.id} 
+                      onClick={() => setInspectingBooking(booking)}
+                      className="hover:bg-white/60 transition-all duration-200 group cursor-pointer"
+                    >
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-gray-50 to-gray-100 text-black flex items-center justify-center rounded-full shadow-sm border border-gray-200/50 shrink-0">
+                            <UserIcon className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="font-bold text-black">{booking.profiles?.full_name || "Unnamed"}</div>
+                            <div className="text-xs text-[var(--text-secondary)]">{booking.profiles?.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 font-bold text-black">
+                        {booking.sessions?.session_types?.title}
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="text-sm text-black font-semibold flex items-center gap-2">
+                          <CalendarIcon className="w-3.5 h-3.5 text-gray-400" />
+                          {sessionStart.toLocaleDateString(undefined, { 
+                            month: 'short', day: 'numeric', year: 'numeric'
+                          })}
+                        </div>
+                        <div className="text-xs text-[var(--text-secondary)] mt-0.5">
+                          {sessionStart.toLocaleTimeString(undefined, { 
+                            hour: '2-digit', minute: '2-digit' 
+                          })}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 font-black text-black text-sm">
+                        £{Number(booking.sessions?.price || 0).toFixed(2)}
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${
+                          booking.payment_status === 'paid' ? 'bg-green-50/80 border-green-100 text-green-700' : 'bg-yellow-50/80 border-yellow-100 text-yellow-700'
+                        }`}>
+                          {booking.payment_status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${
+                          booking.status === 'confirmed' ? 'bg-blue-50/80 border-blue-100 text-blue-700' : 
+                          booking.status === 'cancelled' ? 'bg-red-50/80 border-red-100 text-red-700' :
+                          'bg-gray-50/80 border-gray-100 text-gray-700'
+                        }`}>
+                          {booking.status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-right relative" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          onClick={() => setActionMenuOpen(actionMenuOpen === booking.id ? null : booking.id)}
+                          className="p-2 text-gray-400 hover:text-black transition-colors rounded-full hover:bg-white shadow-sm"
+                        >
+                          <MoreVertical className="w-5 h-5" />
+                        </button>
+
+                        {actionMenuOpen === booking.id && (
+                          <div className="absolute right-8 top-10 w-48 bg-white/90 backdrop-blur-xl border border-gray-100/50 rounded-2xl shadow-xl z-20 py-2 animate-in fade-in zoom-in-95 duration-200 divide-y divide-gray-50">
+                            <div className="py-1">
+                              <button 
+                                onClick={() => { setInspectingBooking(booking); setActionMenuOpen(null); }}
+                                className="w-full px-4 py-2 text-left text-sm font-bold text-gray-700 hover:bg-gray-50/50 flex items-center gap-3 transition-colors"
+                              >
+                                <Eye className="w-4 h-4" /> View Details
+                              </button>
+                            </div>
+                            
+                            <div className="py-1">
+                              {booking.status === 'pending' && (
+                                <button 
+                                  onClick={() => updateStatus(booking.id, 'confirmed')}
+                                  className="w-full px-4 py-2 text-left text-sm font-bold text-green-600 hover:bg-green-50/50 flex items-center gap-3 transition-colors"
+                                >
+                                  <CheckCircle className="w-4 h-4" /> Confirm Booking
+                                </button>
+                              )}
+                              {booking.status !== 'cancelled' && (
+                                <button 
+                                  onClick={() => updateStatus(booking.id, 'cancelled')}
+                                  className="w-full px-4 py-2 text-left text-sm font-bold text-red-600 hover:bg-red-50/50 flex items-center gap-3 transition-colors"
+                                >
+                                  <XCircle className="w-4 h-4" /> Cancel Booking
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
+      {/* Detail Inspector Modal */}
+      {inspectingBooking && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-lg w-full p-8 shadow-2xl relative border border-white/20 animate-in slide-in-from-bottom-4 zoom-in-95 duration-300">
+            <button 
+              onClick={() => setInspectingBooking(null)}
+              className="absolute top-6 right-6 p-2 text-gray-400 hover:text-black hover:bg-gray-100/50 rounded-full transition-colors"
+            >
+              <XCircle className="w-6 h-6" />
+            </button>
+            
+            <div className="mb-8">
+              <h2 className="text-2xl font-black mb-1">Booking Details</h2>
+              <p className="text-[var(--text-secondary)] text-sm">Created on {new Date(inspectingBooking.created_at).toLocaleDateString()}</p>
+            </div>
+
+            <div className="space-y-6">
+              {/* Client Info */}
+              <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Client Information</h3>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-100 text-black font-bold text-lg">
+                    {inspectingBooking.profiles?.full_name?.substring(0, 2).toUpperCase() || "U"}
+                  </div>
+                  <div>
+                    <div className="font-bold text-lg">{inspectingBooking.profiles?.full_name || "Unnamed Client"}</div>
+                    <div className="text-sm text-[var(--text-secondary)] flex items-center gap-1">
+                      {inspectingBooking.profiles?.email}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Session Info */}
+              <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Session Details</h3>
+                <div className="font-black text-xl mb-3">{inspectingBooking.sessions?.session_types?.title}</div>
+                
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <CalendarIcon className="w-4 h-4 text-gray-400" />
+                    {new Date(inspectingBooking.sessions?.start_time || "").toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Clock className="w-4 h-4 text-gray-400" />
+                    {new Date(inspectingBooking.sessions?.start_time || "").toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <MapPin className="w-4 h-4 text-gray-400" />
+                    {inspectingBooking.sessions?.location}
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Clock className="w-4 h-4 text-gray-400" />
+                    {inspectingBooking.sessions?.session_types?.duration_minutes} mins
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment & Status */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Payment</h3>
+                  <div className="flex items-center gap-2 font-bold">
+                    <CreditCard className="w-5 h-5 text-green-600" />
+                    £{Number(inspectingBooking.sessions?.price || 0).toFixed(2)}
+                  </div>
+                  <span className={`inline-block mt-2 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide ${
+                    inspectingBooking.payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {inspectingBooking.payment_status}
+                  </span>
+                </div>
+                
+                <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Status</h3>
+                  <span className={`inline-block px-3 py-1.5 rounded-lg text-sm font-bold uppercase tracking-wide border ${
+                    inspectingBooking.status === 'confirmed' ? 'bg-blue-50/80 border-blue-100 text-blue-700' : 
+                    inspectingBooking.status === 'cancelled' ? 'bg-red-50/80 border-red-100 text-red-700' :
+                    'bg-gray-50/80 border-gray-100 text-gray-700'
+                  }`}>
+                    {inspectingBooking.status}
+                  </span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

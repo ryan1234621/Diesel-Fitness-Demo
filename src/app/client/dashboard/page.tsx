@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { Dumbbell, Calendar, Clock } from "lucide-react";
+import Link from "next/link";
 
 export default function ClientDashboard() {
   const { user } = useAuth();
@@ -49,9 +50,12 @@ export default function ClientDashboard() {
           <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-bold mb-1">No upcoming sessions</h3>
           <p className="text-[var(--text-secondary)] mb-6">You haven't booked any sessions yet.</p>
-          <button className="px-6 py-3 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-colors">
+          <Link 
+            href="/dashboard/bookings/new"
+            className="inline-flex items-center px-6 py-3 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-colors"
+          >
             Book a Session
-          </button>
+          </Link>
         </div>
       </div>
     </div>
