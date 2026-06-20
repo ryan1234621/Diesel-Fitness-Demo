@@ -58,6 +58,9 @@ CREATE POLICY "Notifications - Select Own" ON public.notifications
 CREATE POLICY "Notifications - Update Own" ON public.notifications
   FOR UPDATE USING (user_id = auth.uid());
 
+CREATE POLICY "Notifications - Insert Policy" ON public.notifications
+  FOR INSERT WITH CHECK (user_id = auth.uid() OR public.is_admin());
+
 -- 4. SESSION TYPES TABLE
 CREATE TABLE IF NOT EXISTS public.session_types (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

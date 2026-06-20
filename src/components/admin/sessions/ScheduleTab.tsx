@@ -236,6 +236,49 @@ export function ScheduleTab() {
           .insert(payloadArray);
         
         if (insertError) throw insertError;
+
+        // Fetch all active client and user profiles to notify them
+        const { data: activeProfiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id")
+          .in("role", ["client", "user"])
+          .eq("status", "active");
+
+        if (profilesError) {
+          console.error("Error fetching active profiles for notifications:", profilesError);
+        } else if (activeProfiles && activeProfiles.length > 0) {
+          const notificationsPayload = [];
+          
+          for (const sessionPayload of payloadArray) {
+            const dateFormatted = new Date(sessionPayload.start_time).toLocaleDateString(undefined, {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+
+            for (const profile of activeProfiles) {
+              notificationsPayload.push({
+                user_id: profile.id,
+                title: "New Session Scheduled",
+                message: `A new session "${selectedType.title}" has been scheduled for ${dateFormatted}.`,
+                type: "session_scheduled",
+                is_read: false
+              });
+            }
+          }
+
+          if (notificationsPayload.length > 0) {
+            const { error: notifError } = await supabase
+              .from("notifications")
+              .insert(notificationsPayload);
+            
+            if (notifError) {
+              console.error("Error inserting session notifications:", notifError);
+            }
+          }
+        }
       }
       
       await fetchData();
