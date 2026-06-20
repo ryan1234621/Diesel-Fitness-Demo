@@ -187,10 +187,10 @@ export function BookingOnboardingModal({ isOpen, onClose }: BookingOnboardingMod
       />
       
       {/* Modal Container */}
-      <div className={`relative w-full ${step === 6 ? 'max-w-5xl h-[90vh] sm:h-[85vh]' : 'max-w-xl'} bg-white rounded-[2rem] shadow-2xl flex flex-col overflow-hidden transition-all duration-300 max-h-[95vh]`}>
+      <div className={`relative w-full ${step === 6 ? 'max-w-5xl h-[90vh] sm:h-[85vh]' : 'max-w-xl'} bg-[#F4F3EF] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden transition-all duration-300 max-h-[95vh]`}>
         
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 bg-white z-10 shrink-0">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 bg-[#F4F3EF] z-10 shrink-0">
           <div className="flex items-center gap-3">
             {step > 1 && step < 6 && (
               <button 

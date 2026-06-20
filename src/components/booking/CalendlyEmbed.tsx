@@ -46,7 +46,7 @@ export function CalendlyEmbed({ url, prefill }: CalendlyEmbedProps) {
           width: "100%"
         }}
         pageSettings={{
-          backgroundColor: "ffffff",
+          backgroundColor: "f4f3ef",
           hideEventTypeDetails: false,
           hideLandingPageDetails: false,
           primaryColor: "111111",
