@@ -8,11 +8,13 @@ import { useRouter } from "next/navigation";
 
 import { Header } from "@/components/layout/Header";
 import { WeeklySchedule } from "@/components/landing/WeeklySchedule";
+import { BookingOnboardingModal } from "@/components/booking/BookingOnboardingModal";
 
 export default function Home() {
   const { user, signOut, loading, profile } = useAuth();
   const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -44,13 +46,18 @@ export default function Home() {
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
             ) : (
-              <Link href="/signup" className="group flex items-center gap-2 px-8 py-4 bg-[var(--primary)] text-[var(--primary-foreground)] text-lg font-bold rounded-full hover:shadow-xl hover:-translate-y-1 transition-all">
+              <button onClick={() => setIsModalOpen(true)} className="group flex items-center gap-2 px-8 py-4 bg-[var(--primary)] text-[var(--primary-foreground)] text-lg font-bold rounded-full hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer">
                 Book Your Session
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
+              </button>
             )}
           </div>
         </div>
+
+        <BookingOnboardingModal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+        />
 
         {/* Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl mx-auto mt-32 text-left relative z-10">
