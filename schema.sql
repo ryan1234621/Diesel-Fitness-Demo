@@ -285,6 +285,9 @@ CREATE POLICY "Profiles - Update Self" ON public.profiles
   WITH CHECK (auth.uid() = id AND status = 'active');
 
 -- SESSION_TYPES POLICIES
+CREATE POLICY "Session Types - Public View" ON public.session_types
+  FOR SELECT USING (is_active = true);
+
 CREATE POLICY "Session Types - Active Users View" ON public.session_types
   FOR SELECT USING (public.is_active_user() AND is_active = true);
 
@@ -293,6 +296,9 @@ CREATE POLICY "Session Types - Admin Management" ON public.session_types
   USING (public.is_admin());
 
 -- SESSIONS POLICIES
+CREATE POLICY "Sessions - Public View" ON public.sessions
+  FOR SELECT USING (status = 'scheduled');
+
 CREATE POLICY "Sessions - Active Users View" ON public.sessions
   FOR SELECT USING (public.is_active_user() AND status != 'cancelled');
 

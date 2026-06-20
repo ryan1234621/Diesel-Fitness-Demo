@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 
 import { Header } from "@/components/layout/Header";
+import { WeeklySchedule } from "@/components/landing/WeeklySchedule";
 
 export default function Home() {
   const { user, signOut, loading, profile } = useAuth();
@@ -76,6 +77,9 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {/* Weekly Schedule Section */}
+      <WeeklySchedule />
 
       {/* Footer */}
       <footer className="py-8 text-center text-sm text-[var(--text-secondary)]">
