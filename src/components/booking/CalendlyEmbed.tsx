@@ -37,13 +37,12 @@ export function CalendlyEmbed({ url, prefill }: CalendlyEmbedProps) {
   }
 
   return (
-    <div className="w-full min-h-[650px] relative rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 bg-[#101010]">
+    <div className="w-full h-[750px] relative overflow-hidden bg-transparent">
       <InlineWidget
         url={calendlyUrl}
         prefill={prefill}
         styles={{
           height: "100%",
-          minHeight: "650px",
           width: "100%"
         }}
         pageSettings={{

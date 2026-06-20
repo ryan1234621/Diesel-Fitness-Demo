@@ -164,7 +164,7 @@ export function BookingOnboardingModal({ isOpen, onClose }: BookingOnboardingMod
         );
       case 6:
         return (
-          <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+          <div className="animate-in fade-in slide-in-from-right-4 duration-500 h-full w-full">
             <CalendlyEmbed 
               prefill={{
                 name: `${formData.firstName} ${formData.lastName}`.trim(),
@@ -187,10 +187,10 @@ export function BookingOnboardingModal({ isOpen, onClose }: BookingOnboardingMod
       />
       
       {/* Modal Container */}
-      <div className={`relative w-full ${step === 6 ? 'max-w-4xl' : 'max-w-xl'} bg-white rounded-[2rem] shadow-2xl flex flex-col overflow-hidden transition-all duration-300 max-h-[90vh]`}>
+      <div className={`relative w-full ${step === 6 ? 'max-w-5xl h-[90vh] sm:h-[85vh]' : 'max-w-xl'} bg-white rounded-[2rem] shadow-2xl flex flex-col overflow-hidden transition-all duration-300 max-h-[95vh]`}>
         
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-white/50 backdrop-blur-md z-10 sticky top-0">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 bg-white z-10 shrink-0">
           <div className="flex items-center gap-3">
             {step > 1 && step < 6 && (
               <button 
@@ -221,7 +221,7 @@ export function BookingOnboardingModal({ isOpen, onClose }: BookingOnboardingMod
         </div>
 
         {/* Content */}
-        <div className={`overflow-y-auto ${step === 6 ? 'p-0' : 'p-6 sm:p-10'}`}>
+        <div className={`overflow-y-auto flex-1 ${step === 6 ? 'p-0' : 'p-6 sm:p-10'}`}>
           {renderStepContent()}
         </div>
       </div>
