@@ -288,10 +288,10 @@ export function WeeklySchedule() {
                                 Demo
                               </div>
                             )}
-                            <span className="text-[9px] font-black text-gray-400 block mb-1">
+                            <span className="text-[10px] font-black text-gray-500 block mb-1.5 uppercase tracking-wide">
                               {format(new Date(session.start_time), "h:mm a")}
                             </span>
-                            <h4 className="font-bold text-xs text-black line-clamp-1 pr-3">
+                            <h4 className="font-black text-sm text-black leading-tight mb-1">
                               {session.session_types?.title}
                             </h4>
                             
