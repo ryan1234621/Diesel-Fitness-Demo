@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, ArrowRight, ArrowLeft } from "lucide-react";
+import { X, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { CalendlyEmbed } from "./CalendlyEmbed";
 
 interface BookingOnboardingModalProps {
@@ -18,16 +18,41 @@ export function BookingOnboardingModal({ isOpen, onClose }: BookingOnboardingMod
     limitations: "",
     firstName: "",
     lastName: "",
-    email: ""
+    email: "",
+    gdprConsent: false
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
   const handleNext = () => setStep(prev => Math.min(prev + 1, 6));
   const handleBack = () => setStep(prev => Math.max(prev - 1, 1));
 
-  const updateForm = (key: keyof typeof formData, value: string) => {
+  const updateForm = (key: keyof typeof formData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleWebhookSubmit = async () => {
+    try {
+      setIsSubmitting(true);
+      const response = await fetch("/api/webhooks/n8n", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+      if (response.ok) {
+        handleNext();
+      } else {
+        console.error("Failed to submit lead data");
+        // Proceeding anyway so user isn't fully blocked if webhook fails
+        handleNext();
+      }
+    } catch (err) {
+      console.error(err);
+      handleNext();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const renderStepContent = () => {
@@ -114,7 +139,7 @@ export function BookingOnboardingModal({ isOpen, onClose }: BookingOnboardingMod
           </div>
         );
       case 5:
-        const isFormValid = formData.firstName.trim() && formData.lastName.trim() && formData.email.trim();
+        const isFormValid = formData.firstName.trim() && formData.lastName.trim() && formData.email.trim() && formData.gdprConsent;
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <h2 className="text-3xl font-black tracking-tight">Let's get you scheduled!</h2>
@@ -152,13 +177,30 @@ export function BookingOnboardingModal({ isOpen, onClose }: BookingOnboardingMod
                   placeholder="john@example.com"
                 />
               </div>
+              
+              <div className="flex items-start gap-3 mt-4 p-4 rounded-xl bg-white border border-gray-100">
+                <input
+                  type="checkbox"
+                  id="gdpr"
+                  checked={formData.gdprConsent}
+                  onChange={(e) => updateForm("gdprConsent", e.target.checked)}
+                  className="mt-1 w-5 h-5 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
+                />
+                <label htmlFor="gdpr" className="text-sm text-gray-600 font-medium leading-tight cursor-pointer">
+                  I consent to my data being processed and agree to the privacy policy. I understand I may be contacted regarding my booking.
+                </label>
+              </div>
             </div>
             <button 
-              onClick={handleNext}
-              disabled={!isFormValid}
+              onClick={handleWebhookSubmit}
+              disabled={!isFormValid || isSubmitting}
               className="w-full py-4 bg-[#54f4fc] text-black disabled:opacity-50 disabled:cursor-not-allowed rounded-full font-black text-lg hover:brightness-105 transition-all flex items-center justify-center gap-2 mt-4 shadow-lg shadow-[#54f4fc]/20"
             >
-              Pick a Time <ArrowRight className="w-5 h-5" />
+              {isSubmitting ? (
+                <><Loader2 className="w-5 h-5 animate-spin" /> Submitting...</>
+              ) : (
+                <>Get the Roadmap <ArrowRight className="w-5 h-5" /></>
+              )}
             </button>
           </div>
         );
