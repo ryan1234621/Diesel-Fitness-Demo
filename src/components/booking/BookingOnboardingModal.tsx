@@ -2,8 +2,7 @@
 
 import React, { useState } from "react";
 import { X, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
-import { CalendlyEmbed } from "./CalendlyEmbed";
-
+// Calendly is moved to the success page
 interface BookingOnboardingModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -25,31 +24,33 @@ export function BookingOnboardingModal({ isOpen, onClose }: BookingOnboardingMod
 
   if (!isOpen) return null;
 
-  const handleNext = () => setStep(prev => Math.min(prev + 1, 6));
+  const handleNext = () => setStep(prev => Math.min(prev + 1, 5));
   const handleBack = () => setStep(prev => Math.max(prev - 1, 1));
 
   const updateForm = (key: keyof typeof formData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleWebhookSubmit = async () => {
+  const handleCheckoutSubmit = async () => {
     try {
       setIsSubmitting(true);
-      const response = await fetch("/api/webhooks/n8n", {
+      const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData)
       });
-      if (response.ok) {
-        handleNext();
+      
+      const data = await response.json();
+      
+      if (response.ok && data.url) {
+        window.location.href = data.url;
       } else {
-        console.error("Failed to submit lead data");
-        // Proceeding anyway so user isn't fully blocked if webhook fails
-        handleNext();
+        console.error("Failed to create checkout session", data.error);
+        alert(data.error || "Failed to initialize checkout. Please try again.");
       }
     } catch (err) {
       console.error(err);
-      handleNext();
+      alert("An unexpected error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -192,29 +193,19 @@ export function BookingOnboardingModal({ isOpen, onClose }: BookingOnboardingMod
               </div>
             </div>
             <button 
-              onClick={handleWebhookSubmit}
+              onClick={handleCheckoutSubmit}
               disabled={!isFormValid || isSubmitting}
               className="w-full py-4 bg-[#54f4fc] text-black disabled:opacity-50 disabled:cursor-not-allowed rounded-full font-black text-lg hover:brightness-105 transition-all flex items-center justify-center gap-2 mt-4 shadow-lg shadow-[#54f4fc]/20"
             >
               {isSubmitting ? (
-                <><Loader2 className="w-5 h-5 animate-spin" /> Submitting...</>
+                <><Loader2 className="w-5 h-5 animate-spin" /> Proceeding to Payment...</>
               ) : (
-                <>Get the Roadmap <ArrowRight className="w-5 h-5" /></>
+                <>Continue to Payment <ArrowRight className="w-5 h-5" /></>
               )}
             </button>
           </div>
         );
-      case 6:
-        return (
-          <div className="animate-in fade-in slide-in-from-right-4 duration-500 h-full w-full">
-            <CalendlyEmbed 
-              prefill={{
-                name: `${formData.firstName} ${formData.lastName}`.trim(),
-                email: formData.email
-              }}
-            />
-          </div>
-        );
+
       default:
         return null;
     }
@@ -229,12 +220,12 @@ export function BookingOnboardingModal({ isOpen, onClose }: BookingOnboardingMod
       />
       
       {/* Modal Container */}
-      <div className={`relative w-full ${step === 6 ? 'max-w-5xl h-[90vh] sm:h-[85vh]' : 'max-w-xl'} bg-[#F4F3EF] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden transition-all duration-300 max-h-[95vh]`}>
+      <div className={`relative w-full max-w-xl bg-[#F4F3EF] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden transition-all duration-300 max-h-[95vh]`}>
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 bg-[#F4F3EF] z-10 shrink-0">
           <div className="flex items-center gap-3">
-            {step > 1 && step < 6 && (
+            {step > 1 && (
               <button 
                 onClick={handleBack}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -243,7 +234,7 @@ export function BookingOnboardingModal({ isOpen, onClose }: BookingOnboardingMod
               </button>
             )}
             <div className="flex space-x-1.5">
-              {[1, 2, 3, 4, 5, 6].map(i => (
+              {[1, 2, 3, 4, 5].map(i => (
                 <div 
                   key={i} 
                   className={`h-1.5 rounded-full transition-all duration-300 ${
@@ -263,7 +254,7 @@ export function BookingOnboardingModal({ isOpen, onClose }: BookingOnboardingMod
         </div>
 
         {/* Content */}
-        <div className={`overflow-y-auto flex-1 ${step === 6 ? 'p-0' : 'p-6 sm:p-10'}`}>
+        <div className="overflow-y-auto flex-1 p-6 sm:p-10">
           {renderStepContent()}
         </div>
       </div>
