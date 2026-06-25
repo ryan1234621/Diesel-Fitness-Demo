@@ -85,6 +85,110 @@ export default function Home() {
         </div>
       </main>
 
+      {/* Expert Insights (GEO Optimization) */}
+      <section className="w-full max-w-5xl mx-auto py-20 px-6">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">Expert Insights</h2>
+          <p className="text-lg text-gray-500 font-medium">Elevate your knowledge with our latest fitness and performance articles.</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { title: "The Science of Hypertrophy", desc: "Understanding progressive overload and rep ranges for optimal muscle growth." },
+            { title: "Elite Recovery Protocols", desc: "Why sleep, nutrition, and active recovery dictate your true potential." },
+            { title: "Mastering the Deadlift", desc: "A complete biomechanical breakdown for the ultimate compound movement." }
+          ].map((article, i) => (
+            <article key={i} className="group p-6 rounded-3xl bg-[#F4F3EF] border border-transparent hover:border-black/10 transition-colors cursor-pointer">
+              <div className="w-full h-48 bg-white rounded-2xl mb-6 shadow-sm overflow-hidden flex items-center justify-center">
+                <Dumbbell className="w-10 h-10 text-gray-300 group-hover:scale-110 transition-transform duration-500" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">{article.title}</h3>
+              <p className="text-gray-600 font-medium">{article.desc}</p>
+              <div className="mt-4 flex items-center text-sm font-bold uppercase tracking-wider text-black">
+                Read Article <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* FAQ Section (AEO Optimization) */}
+      <section className="w-full max-w-3xl mx-auto py-20 px-6">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">Frequently Asked Questions</h2>
+          <p className="text-lg text-gray-500 font-medium">Everything you need to know about training with us.</p>
+        </div>
+        <div className="space-y-4">
+          {[
+            {
+              q: "What is the Transformation Plan?",
+              a: "The Transformation Plan is our flagship comprehensive, personalized fitness program designed to push your physical limits, optimize your nutrition, and deliver guaranteed results."
+            },
+            {
+              q: "How do I book a session?",
+              a: "You can book a session by clicking the 'Book Your Session' button on the homepage, filling out your fitness background, and selecting a time on our live calendar after checkout."
+            },
+            {
+              q: "Where are you located?",
+              a: "Diesel Fitness operates primarily in London, offering both in-person elite training sessions at our private facility and comprehensive remote online programming."
+            },
+            {
+              q: "Do you offer nutrition planning?",
+              a: "Yes, nutrition is a core pillar of our methodology. We provide custom macronutrient targets, meal structuring, and continuous nutritional audits tailored specifically to your goals."
+            }
+          ].map((faq, i) => (
+            <div key={i} className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">{faq.q}</h3>
+              <p className="text-gray-600 font-medium">{faq.a}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* JSON-LD for Answer Engine Optimization (FAQPage) */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is the Transformation Plan?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "The Transformation Plan is our flagship comprehensive, personalized fitness program designed to push your physical limits, optimize your nutrition, and deliver guaranteed results."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How do I book a session?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "You can book a session by clicking the 'Book Your Session' button on the homepage, filling out your fitness background, and selecting a time on our live calendar after checkout."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Where are you located?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Diesel Fitness operates primarily in London, offering both in-person elite training sessions at our private facility and comprehensive remote online programming."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Do you offer nutrition planning?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes, nutrition is a core pillar of our methodology. We provide custom macronutrient targets, meal structuring, and continuous nutritional audits tailored specifically to your goals."
+                }
+              }
+            ]
+          })
+        }}
+      />
+
       {/* Weekly Schedule Section */}
       <WeeklySchedule />
 
