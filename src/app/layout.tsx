@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     siteName: "Diesel Fitness",
     images: [
       {
-        url: "/og-image.jpg", // Assuming an og-image exists or will be added
+        url: "/og-image.png", // Assuming an og-image exists or will be added
         width: 1200,
         height: 630,
         alt: "Diesel Fitness Elite Training"
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Diesel Fitness | Elite Personal Training",
     description: "Exclusive personal training and custom nutrition plans in London.",
-    images: ["/og-image.jpg"],
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,
@@ -74,7 +74,7 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "HealthAndBeautyBusiness",
               "name": "Diesel Fitness",
-              "image": "https://dieselfitness.com/og-image.jpg",
+              "image": "https://dieselfitness.com/og-image.png",
               "@id": "https://dieselfitness.com",
               "url": "https://dieselfitness.com",
               "telephone": "+44 20 1234 5678",

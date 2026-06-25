@@ -93,20 +93,22 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { title: "The Science of Hypertrophy", desc: "Understanding progressive overload and rep ranges for optimal muscle growth." },
-            { title: "Elite Recovery Protocols", desc: "Why sleep, nutrition, and active recovery dictate your true potential." },
-            { title: "Mastering the Deadlift", desc: "A complete biomechanical breakdown for the ultimate compound movement." }
+            { title: "The Science of Hypertrophy", desc: "Understanding progressive overload and rep ranges for optimal muscle growth.", slug: "the-science-of-hypertrophy" },
+            { title: "Elite Recovery Protocols", desc: "Why sleep, nutrition, and active recovery dictate your true potential.", slug: "elite-recovery-protocols" },
+            { title: "Mastering the Deadlift", desc: "A complete biomechanical breakdown for the ultimate compound movement.", slug: "mastering-the-deadlift" }
           ].map((article, i) => (
-            <article key={i} className="group p-6 rounded-3xl bg-[#F4F3EF] border border-transparent hover:border-black/10 transition-colors cursor-pointer">
-              <div className="w-full h-48 bg-white rounded-2xl mb-6 shadow-sm overflow-hidden flex items-center justify-center">
-                <Dumbbell className="w-10 h-10 text-gray-300 group-hover:scale-110 transition-transform duration-500" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">{article.title}</h3>
-              <p className="text-gray-600 font-medium">{article.desc}</p>
-              <div className="mt-4 flex items-center text-sm font-bold uppercase tracking-wider text-black">
-                Read Article <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </article>
+            <Link key={i} href={`/articles/${article.slug}`}>
+              <article className="group p-6 rounded-3xl bg-[#F4F3EF] border border-transparent hover:border-black/10 transition-colors cursor-pointer h-full">
+                <div className="w-full h-48 bg-white rounded-2xl mb-6 shadow-sm overflow-hidden flex items-center justify-center">
+                  <Dumbbell className="w-10 h-10 text-gray-300 group-hover:scale-110 transition-transform duration-500" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">{article.title}</h3>
+                <p className="text-gray-600 font-medium">{article.desc}</p>
+                <div className="mt-4 flex items-center text-sm font-bold uppercase tracking-wider text-black">
+                  Read Article <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </article>
+            </Link>
           ))}
         </div>
       </section>
@@ -134,6 +136,30 @@ export default function Home() {
             {
               q: "Do you offer nutrition planning?",
               a: "Yes, nutrition is a core pillar of our methodology. We provide custom macronutrient targets, meal structuring, and continuous nutritional audits tailored specifically to your goals."
+            },
+            {
+              q: "How long is each training session?",
+              a: "Each session lasts exactly 60 minutes, ensuring an optimal balance of intense training, mobility work, and cooldown without overtraining."
+            },
+            {
+              q: "Can beginners join the program?",
+              a: "Absolutely. Our programming is entirely custom and scales to your current fitness level, whether you are a complete novice or an advanced athlete."
+            },
+            {
+              q: "What happens if I miss a session?",
+              a: "We require 24 hours notice for cancellations. If you cancel with enough notice, you can easily reschedule your session through the dashboard."
+            },
+            {
+              q: "Do you provide training programs for days I don't see you?",
+              a: "Yes! The Transformation Plan includes a full weekly schedule, so you know exactly what to do on the days you train independently."
+            },
+            {
+              q: "How quickly will I see results?",
+              a: "While individual results vary, most clients notice significant improvements in strength and energy within the first 4 weeks, with visible body composition changes by week 8."
+            },
+            {
+              q: "Is the payment monthly or a one-time fee?",
+              a: "The initial Transformation Plan is a structured upfront package. After completion, we offer rolling monthly subscriptions for ongoing coaching."
             }
           ].map((faq, i) => (
             <div key={i} className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm">
@@ -183,6 +209,54 @@ export default function Home() {
                   "@type": "Answer",
                   "text": "Yes, nutrition is a core pillar of our methodology. We provide custom macronutrient targets, meal structuring, and continuous nutritional audits tailored specifically to your goals."
                 }
+              },
+              {
+                "@type": "Question",
+                "name": "How long is each training session?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Each session lasts exactly 60 minutes, ensuring an optimal balance of intense training, mobility work, and cooldown without overtraining."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can beginners join the program?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Absolutely. Our programming is entirely custom and scales to your current fitness level, whether you are a complete novice or an advanced athlete."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What happens if I miss a session?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "We require 24 hours notice for cancellations. If you cancel with enough notice, you can easily reschedule your session through the dashboard."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Do you provide training programs for days I don't see you?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes! The Transformation Plan includes a full weekly schedule, so you know exactly what to do on the days you train independently."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How quickly will I see results?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "While individual results vary, most clients notice significant improvements in strength and energy within the first 4 weeks, with visible body composition changes by week 8."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is the payment monthly or a one-time fee?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "The initial Transformation Plan is a structured upfront package. After completion, we offer rolling monthly subscriptions for ongoing coaching."
+                }
               }
             ]
           })
@@ -193,8 +267,9 @@ export default function Home() {
       <WeeklySchedule />
 
       {/* Footer */}
-      <footer className="py-8 text-center text-sm text-[var(--text-secondary)]">
-        &copy; {new Date().getFullYear()} Diesel Fitness. All rights reserved.
+      <footer className="py-8 text-center text-sm text-[var(--text-secondary)] flex flex-col items-center gap-2">
+        <span>&copy; {new Date().getFullYear()} Diesel Fitness. All rights reserved.</span>
+        <span className="text-xs text-gray-400">Last Updated: {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
       </footer>
     </div>
   );
